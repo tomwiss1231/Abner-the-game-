@@ -43,8 +43,8 @@ namespace Assets.Scripts.Behaviour
             {
                 Util.Abstract.Soldier soldier = Soldier.GetComponent<Util.Abstract.Soldier>(); 
                 soldier.InAttackRange = true;
-                Color color = soldier.tag.Equals(teamTag) ? Color.cyan : Color.yellow;
-                changeColor(color);
+                if(soldier.tag.Equals(teamTag)) ChangeToBuff(); 
+                else ChangeToTarget();
                 return;
             }
             IsNeighbour = true;
@@ -57,7 +57,7 @@ namespace Assets.Scripts.Behaviour
         {
             if (n == 0 || IsOccupied()) return;
             if (weight + 1 >= tile.Weight) return;
-            changeColor(Color.blue);
+            ChangeToWalk();
             IsNeighbour = true;
             tile.Weight = weight + 1;
 
@@ -92,7 +92,7 @@ namespace Assets.Scripts.Behaviour
                 tile.Weight = 0;
                 foreach (TileBehaviour tb in tile.GetAllNeighbours())
                     tb.Neighbour(stp, 0);
-                changeColor(Color.red);
+                ChangeToBuff();
                 steps = stp;
             }
         }
@@ -112,14 +112,6 @@ namespace Assets.Scripts.Behaviour
             else SetDefault();
         }
 
-        void OnMouseEnter()
-        {
-            if (tile.Passable && !IsNeighbour)
-            {
-                changeColor(orange);
-            }
-        }
-
         void OnMouseExit()
         {
             if (tile.Passable && GridManager.instance.selecetedTile != this && !IsNeighbour)
@@ -132,18 +124,51 @@ namespace Assets.Scripts.Behaviour
             if (Input.GetMouseButtonDown(0))
             {
                 if (!IsNeighbour || GridManager.instance.SelectedSoldier.IsMoving()) return;
-                changeColor(Color.green);
+                ChangeToPath();
                 Stack<Tile> path = new Stack<Tile>();
                 path.Push(tile);
                 FindPath(this, path);
             }
         }
-    
+
+        void ChangeColor(bool def, bool walk, bool path, bool target, bool buff)
+        {
+            transform.GetChild(0).gameObject.SetActive(def);
+            transform.GetChild(1).gameObject.SetActive(walk);
+            transform.GetChild(2).gameObject.SetActive(path);
+            transform.GetChild(3).gameObject.SetActive(target);
+            transform.GetChild(4).gameObject.SetActive(buff);
+        }
+
+        void ChangeToWalk()
+        {
+            ChangeColor(false, true, false, false, false);
+        }
+
+        void ChangeToDefault()
+        {
+            ChangeColor(true, false, false, false, false);
+        }
+        
+        void ChangeToPath()
+        {
+            ChangeColor(false, false, true, false, false);
+        }
+        
+        void ChangeToTarget()
+        {
+            ChangeColor(false, false, false, true, false);
+        }
+
+        void ChangeToBuff()
+        {
+            ChangeColor(false, false, false, false, true);
+        }
+
         public void SetDefault()
         {
             var renderer = transform.GetChild(0).GetComponent<Renderer>();
-            renderer.material = defaultMaterial;
-            renderer.material.color = Color.white;
+            ChangeToDefault();
             if (IsOccupied()) Soldier.GetComponent<Util.Abstract.Soldier>().InAttackRange = false;
             IsNeighbour = false;
             tile.ResetWeight();
@@ -162,7 +187,7 @@ namespace Assets.Scripts.Behaviour
             foreach (TileBehaviour neighbour in tb.tile.GetAllNeighbours())
                 if (min.tile.Weight > neighbour.tile.Weight) min = neighbour;
             path.Push(min.tile);
-            min.changeColor(Color.green);
+            min.ChangeToPath();
             FindPath(min,path);
         }
 

@@ -10,15 +10,13 @@ namespace Assets.Scripts.Behaviour
     [ExecuteInEditMode]
     public class GridManager : MonoBehaviour
     {
-        [SerializeField]
-        public static GridManager instance = null;
+        [SerializeField] public static GridManager instance = null;
 
-        [SerializeField]
-        public GameObject Hex;
-        [SerializeField]
-        public GameObject Ground;
-        [SerializeField]
-        public TileBehaviour selecetedTile = null;
+        [SerializeField] public GameObject Hex;
+
+        [SerializeField] public GameObject Ground;
+        [SerializeField] public Material SelectM;
+        [SerializeField] public TileBehaviour selecetedTile = null;
 
         [SerializeField] public Util.Abstract.Soldier SelectedSoldier = null;
 
@@ -29,8 +27,6 @@ namespace Assets.Scripts.Behaviour
         [SerializeField] private Vector3 _initPos;
 
         [SerializeField] private  Dictionary<Point, TileBehaviour> board;
-
-
 
         public void ShowWalkRadiusEvent()
         {
@@ -127,7 +123,7 @@ namespace Assets.Scripts.Behaviour
             createGrid();
         }
 
-        void Start() 
+        void Start()
         {
             instance = this;
             setSizes();
