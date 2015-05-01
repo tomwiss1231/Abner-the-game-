@@ -17,6 +17,8 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField, HideInInspector] private Tile _curTile;
         [SerializeField, HideInInspector] private Vector3 _curTilePos;
         
+        [SerializeField, HideInInspector] protected Buff _buff;
+        
         [SerializeField] public int NumberOfAttacks;
         [SerializeField] public int MissPrecent;
         [SerializeField] public int CriticalPrecent;
@@ -36,7 +38,13 @@ namespace Assets.Scripts.Util.Abstract
                 
         public abstract void SpecialHit(ISoldier enemy);
 
-        public abstract void BuffAction(Soldier target);
+        public abstract void BuffAction(Soldier teamSoldier);
+
+        protected virtual void Init()
+        {
+            _isMoving = false;
+            _rotateAndStop = false;
+        }
 
         public void GetBuffFromTeam(Buff buff)
         {
@@ -64,12 +72,12 @@ namespace Assets.Scripts.Util.Abstract
             }
         }
 
-        private int CalHit()
+        protected int CalHit()
         {
             return Random.Range(MinDamege, MaxDamege);
         }
 
-        private bool CheckIfCritical()
+        protected bool CheckIfCritical()
         {
             return Random.Range(0, 100) <= CriticalPrecent;
         }
@@ -104,7 +112,7 @@ namespace Assets.Scripts.Util.Abstract
         {
             if (Input.GetMouseButtonDown(0))
             {
-                ISoldier selectSoldier = GridManager.instance.SelectedSoldier;
+                Soldier selectSoldier = GridManager.instance.SelectedSoldier;
                 if (selectSoldier == null) GridManager.instance.SelectedSoldier = this;
                 else if (selectSoldier != this && !InAttackRange)
                 {
@@ -112,7 +120,11 @@ namespace Assets.Scripts.Util.Abstract
                     selectSoldier.ClearAll();
                     GridManager.instance.SelectedSoldier = this;
                 }
-                else if (InAttackRange) selectSoldier.Demage(this);
+                else if (InAttackRange)
+                {
+                    if(tag == selectSoldier.tag) selectSoldier.BuffAction(this);
+                    else selectSoldier.Demage(this);
+                }
             }
         }
 
@@ -162,15 +174,14 @@ namespace Assets.Scripts.Util.Abstract
 
         void Start()
         {
-            _isMoving = false;
-            _rotateAndStop = false;
+            Init();
         }
         
         void Update()
         {
             if (Input.GetKeyDown("d"))
             {
-                Demage(this);              
+                SpecialHit(this);              
             }
             if (!Health.IsAlive())
                 gameObject.SetActive(false);

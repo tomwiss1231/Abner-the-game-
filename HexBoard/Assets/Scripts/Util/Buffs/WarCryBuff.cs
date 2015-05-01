@@ -4,7 +4,7 @@ namespace Assets.Scripts.Util.Buffs
 {
     public class WarCryBuff : Buff
     {
-        public WarCryBuff(int turnLeft) : base(turnLeft) {}
+        public WarCryBuff() : base(3) {}
 
         public override void DoBuff(Soldier soldier)
         {

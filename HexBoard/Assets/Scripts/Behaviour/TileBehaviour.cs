@@ -35,19 +35,22 @@ namespace Assets.Scripts.Behaviour
         private bool _isNeighbour;
 
 
-        public void HaveEnemy(int n, int weight)
+        public void HaveEnemy(int n, int weight, string teamTag)
         {
             if(n == 0) return;
             if(weight + 1 >= tile.Weight) return;
             if (IsOccupied())
             {
-                Soldier.GetComponent<Util.Abstract.Soldier>().InAttackRange = true;
-                changeColor(Color.yellow);
+                Util.Abstract.Soldier soldier = Soldier.GetComponent<Util.Abstract.Soldier>(); 
+                soldier.InAttackRange = true;
+                Color color = soldier.tag.Equals(teamTag) ? Color.cyan : Color.yellow;
+                changeColor(color);
+                return;
             }
             IsNeighbour = true;
             tile.Weight = weight + 1;
             foreach (TileBehaviour tb in tile.GetAllNeighbours())
-                tb.HaveEnemy(n-1, weight + 1);
+                tb.HaveEnemy(n-1, weight + 1, teamTag);
         }
 
         public void Neighbour(int n, int weight)
@@ -98,7 +101,7 @@ namespace Assets.Scripts.Behaviour
         {
            tile.Weight = 0;
             foreach (TileBehaviour tb in tile.GetAllNeighbours())
-                tb.HaveEnemy(range,0);
+                tb.HaveEnemy(range,0, Soldier.tag);
 
         }
 

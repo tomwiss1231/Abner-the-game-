@@ -26,7 +26,7 @@ namespace Assets.Scripts.UI
 
         public void TakeDemage(float demage)
         {
-            float result = _curHealth - (demage / MaxHealth);
+            float result = _curHealth - demage;
             if (result < 0)
                 result = 0;
             _curHealth = result;
@@ -51,7 +51,7 @@ namespace Assets.Scripts.UI
 
         public void AddHealth(float healPoints)
         {
-            float result = _curHealth + healPoints;
+            float result = _curHealth + healPoints/MaxHealth;
             if (result > MaxHealth)
                 result = MaxHealth;
             _curHealth = result;

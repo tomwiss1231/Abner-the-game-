@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Assets.Scripts.Util;
-using Assets.Scripts.Util.Interfaces;
 using UnityEditor;
 using UnityEngine;
 
@@ -21,7 +20,7 @@ namespace Assets.Scripts.Behaviour
         [SerializeField]
         public TileBehaviour selecetedTile = null;
 
-        [SerializeField] public ISoldier SelectedSoldier = null;
+        [SerializeField] public Util.Abstract.Soldier SelectedSoldier = null;
 
         [SerializeField] private float hexWidth;
         [SerializeField] private float hexHeight;
@@ -38,16 +37,15 @@ namespace Assets.Scripts.Behaviour
             if (SelectedSoldier != null && !SelectedSoldier.IsMoving())
             {
                 SelectedSoldier.ClearAll();
-                SelectedSoldier.WalkRadius();   
+                SelectedSoldier.WalkRadius();
+                SelectedSoldier.ShowHitRange();
             }
         }
-
         public void ShowHitRange()
         {
             if (SelectedSoldier != null && !SelectedSoldier.IsMoving())
             {   
                 SelectedSoldier.ClearAll();
-                SelectedSoldier.ShowHitRange();
             }
         }
 
