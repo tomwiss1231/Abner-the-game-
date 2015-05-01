@@ -26,10 +26,11 @@ namespace Assets.Scripts.UI
 
         public void TakeDemage(float demage)
         {
-            float result = _curHealth - demage;
+            float result = _curHealth - (demage / MaxHealth);
             if (result < 0)
                 result = 0;
             _curHealth = result;
+            print(_curHealth + "%");
             UpdateHealth();
         }
 

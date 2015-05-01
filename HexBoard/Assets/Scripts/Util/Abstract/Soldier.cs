@@ -170,7 +170,7 @@ namespace Assets.Scripts.Util.Abstract
         {
             if (Input.GetKeyDown("d"))
             {
-                Health.TakeDemage(1);              
+                Demage(this);              
             }
             if (!Health.IsAlive())
                 gameObject.SetActive(false);
