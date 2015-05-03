@@ -66,10 +66,13 @@
      <Compile Include="Assets\5MinuteGUI\Scripts\Splash\SplashImages.cs" />
      <Compile Include="Assets\5MinuteGUI\Standard Assets\Image Effects (Pro Only)\GlowEffect.cs" />
      <Compile Include="Assets\Scripts\Behaviour\CameraLook.cs" />
+     <Compile Include="Assets\Scripts\Behaviour\GameManeger.cs" />
      <Compile Include="Assets\Scripts\Behaviour\Grid.cs" />
      <Compile Include="Assets\Scripts\Behaviour\GridManager.cs" />
+     <Compile Include="Assets\Scripts\Behaviour\Player.cs" />
      <Compile Include="Assets\Scripts\Behaviour\Soldier\Warrior.cs" />
      <Compile Include="Assets\Scripts\Behaviour\TileBehaviour.cs" />
+     <Compile Include="Assets\Scripts\UI\FloatingText.cs" />
      <Compile Include="Assets\Scripts\UI\HealthBar.cs" />
      <Compile Include="Assets\Scripts\UI\UiFollowObject.cs" />
      <Compile Include="Assets\Scripts\Util\Abstract\Buff.cs" />
@@ -77,9 +80,13 @@
      <Compile Include="Assets\Scripts\Util\Buffs\ArcherBuff.cs" />
      <Compile Include="Assets\Scripts\Util\Buffs\MageBuff.cs" />
      <Compile Include="Assets\Scripts\Util\Buffs\WarCryBuff.cs" />
+     <Compile Include="Assets\Scripts\Util\FromWorldPointTextPositioner.cs" />
      <Compile Include="Assets\Scripts\Util\Interfaces\GridObject.cs" />
+     <Compile Include="Assets\Scripts\Util\Interfaces\IFloatingTextPositioner.cs" />
      <Compile Include="Assets\Scripts\Util\Interfaces\IHealth.cs" />
      <Compile Include="Assets\Scripts\Util\Interfaces\ISoldier.cs" />
+     <Compile Include="Assets\Scripts\Util\Interfaces\ISoldierObserver.cs" />
+     <Compile Include="Assets\Scripts\Util\Interfaces\Observerble.cs" />
      <Compile Include="Assets\Scripts\Util\Point.cs" />
      <Compile Include="Assets\Scripts\Util\Tile.cs" />
      <Compile Include="Assets\Scripts\Windows\GridWindow .cs" />

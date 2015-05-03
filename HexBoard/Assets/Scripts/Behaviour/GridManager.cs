@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Assets.Scripts.UI;
 using Assets.Scripts.Util;
 using UnityEditor;
 using UnityEngine;
@@ -16,15 +17,15 @@ namespace Assets.Scripts.Behaviour
 
         [SerializeField] public GameObject Ground;
         [SerializeField] public Material SelectM;
-        [SerializeField] public TileBehaviour selecetedTile = null;
+        [SerializeField, HideInInspector] public TileBehaviour selecetedTile = null;
 
-        [SerializeField] public Util.Abstract.Soldier SelectedSoldier = null;
+        [SerializeField, HideInInspector] public Util.Abstract.Soldier SelectedSoldier = null;
 
-        [SerializeField] private float hexWidth;
-        [SerializeField] private float hexHeight;
-        [SerializeField] private float groundWidth;
-        [SerializeField] private float groundHeight;
-        [SerializeField] private Vector3 _initPos;
+        [SerializeField, HideInInspector] private float hexWidth;
+        [SerializeField, HideInInspector] private float hexHeight;
+        [SerializeField, HideInInspector] private float groundWidth;
+        [SerializeField, HideInInspector] private float groundHeight;
+        [SerializeField, HideInInspector] private Vector3 _initPos;
 
         [SerializeField] private  Dictionary<Point, TileBehaviour> board;
 
@@ -37,11 +38,13 @@ namespace Assets.Scripts.Behaviour
                 SelectedSoldier.ShowHitRange();
             }
         }
-        public void ShowHitRange()
+
+        public void CancelEve()
         {
             if (SelectedSoldier != null && !SelectedSoldier.IsMoving())
-            {   
+            {
                 SelectedSoldier.ClearAll();
+                SelectedSoldier = null;
             }
         }
 

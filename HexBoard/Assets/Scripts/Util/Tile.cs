@@ -37,23 +37,31 @@ namespace Assets.Scripts.Util
         [SerializeField]
         private List<TileBehaviour> _neighbours;
 
-        [SerializeField]
-        private int _weight;
+        [SerializeField] private int _weightWalk;
+        
+        [SerializeField] private int _weightArea;
 
         [SerializeField]
         public bool Passable { get { return _passable; } set { _passable = value; } }
 
         [SerializeField]
-        public int Weight
+        public int WeightWalk
         {
-            get { return _weight; }
-            set { _weight = value; }
+            get { return _weightWalk; }
+            set { _weightWalk = value; }
+        }
+
+        [SerializeField]
+        public int WeightArea
+        {
+            get { return _weightArea; }
+            set { _weightArea = value; }
         }
 
         public Tile(int x, int y, bool passable) : base(x, y) {
             _passable = passable;
             _neighbours = new List<TileBehaviour>();
-            Weight = MAX_WEIGHT;
+            WeightWalk = MAX_WEIGHT;
         }
 
         public void FindNeighbours(Dictionary<Point, TileBehaviour> board, Vector2 boardSize, 
@@ -80,7 +88,11 @@ namespace Assets.Scripts.Util
 
         public void setP(bool val) { _passable = val; }
 
-        public void ResetWeight() { Weight = MAX_WEIGHT; }
+        public void ResetWeight()
+        {
+            WeightWalk = MAX_WEIGHT;
+            WeightArea = MAX_WEIGHT;
+        }
 
         public  IEnumerable<TileBehaviour> GetAllNeighbours() { return _neighbours.Where(o => o.tile.Passable); }
 

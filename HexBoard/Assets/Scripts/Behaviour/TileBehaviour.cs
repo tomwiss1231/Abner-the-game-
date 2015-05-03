@@ -2,13 +2,14 @@
 using Assets.Scripts.Util;
 using Assets.Scripts.Util.Interfaces;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Assets.Scripts.Behaviour
 {
     [Serializable]
     [ExecuteInEditMode]
-    public class TileBehaviour : MonoBehaviour
+    public class TileBehaviour : MonoBehaviour , ISoldierObserver
     {
         [SerializeField] 
         public GameObject Soldier = null;
@@ -38,9 +39,9 @@ namespace Assets.Scripts.Behaviour
         public void HaveEnemy(int n, int weight, string teamTag)
         {
             if(n == 0) return;
-            if(weight + 1 >= tile.Weight) return;
             if (IsOccupied())
             {
+                GridManager.instance.SelectedSoldier.AddObserver(this);
                 Util.Abstract.Soldier soldier = Soldier.GetComponent<Util.Abstract.Soldier>(); 
                 soldier.InAttackRange = true;
                 if(soldier.tag.Equals(teamTag)) ChangeToBuff(); 
@@ -48,31 +49,20 @@ namespace Assets.Scripts.Behaviour
                 return;
             }
             IsNeighbour = true;
-            tile.Weight = weight + 1;
-            foreach (TileBehaviour tb in tile.GetAllNeighbours())
+            tile.WeightArea = weight + 1;
+            foreach (TileBehaviour tb in tile.GetAllNeighbours().Where(tb => tb.tile.WeightArea > weight + 1))
                 tb.HaveEnemy(n-1, weight + 1, teamTag);
         }
 
         public void Neighbour(int n, int weight)
         {
-            if (n == 0 || IsOccupied()) return;
-            if (weight + 1 >= tile.Weight) return;
+            if (n == 0) return;
             ChangeToWalk();
             IsNeighbour = true;
-            tile.Weight = weight + 1;
-
-            foreach (TileBehaviour tb in tile.GetAllNeighbours())
+            tile.WeightWalk = weight + 1;
+            GridManager.instance.SelectedSoldier.AddObserver(this);
+            foreach (TileBehaviour tb in tile.GetAllNeighbours().Where(tb => !tb.IsOccupied() && tb.tile.WeightWalk > weight + 1))
                 tb.Neighbour(n - 1, weight + 1);
-        }
-
-        public void Clear(int n) {
-            if (n == 0) return;
-            foreach (TileBehaviour tb in tile.GetAllNeighbours())
-            {
-                tb.Clear(n - 1);
-                tb.SetDefault();
-            }
-            SetDefault();
         }
 
         void changeColor(Color color)
@@ -84,13 +74,14 @@ namespace Assets.Scripts.Behaviour
             renderer.material.color = color;
         }
 
-        public void showAllPaths(int stp)
+        public void ShowAllPaths(int stp)
         {
             if (!IsNeighbour)
             {
                 GridManager.instance.selecetedTile = this;
-                tile.Weight = 0;
-                foreach (TileBehaviour tb in tile.GetAllNeighbours())
+                tile.WeightWalk = 0;
+                GridManager.instance.SelectedSoldier.AddObserver(this);
+                foreach (TileBehaviour tb in tile.GetAllNeighbours().Where(tb => !tb.IsOccupied() && tb.tile.WeightWalk > tile.WeightWalk + 1))
                     tb.Neighbour(stp, 0);
                 ChangeToBuff();
                 steps = stp;
@@ -99,9 +90,10 @@ namespace Assets.Scripts.Behaviour
 
         public void CalHitRange(int range)
         {
-           tile.Weight = 0;
-            foreach (TileBehaviour tb in tile.GetAllNeighbours())
+           tile.WeightArea = 0;
+            foreach (TileBehaviour tb in tile.GetAllNeighbours().Where(tb => tb.tile.WeightArea > tile.WeightArea + 1))
                 tb.HaveEnemy(range,0, Soldier.tag);
+            
 
         }
 
@@ -111,13 +103,6 @@ namespace Assets.Scripts.Behaviour
             if (!tile.Passable) changeColor(Color.gray);
             else SetDefault();
         }
-
-        void OnMouseExit()
-        {
-            if (tile.Passable && GridManager.instance.selecetedTile != this && !IsNeighbour)
-                SetDefault();
-        }
-
 
         void OnMouseOver()
         {
@@ -176,7 +161,7 @@ namespace Assets.Scripts.Behaviour
 
         void FindPath(TileBehaviour tb, Stack<Tile> path)
         {
-            if (tb.tile.Weight == 0)
+            if (tb.tile.WeightWalk == 0)
             {
                 tb.Soldier.GetComponent<Util.Abstract.Soldier>().Walk(path);
                 Soldier = tb.Soldier;
@@ -185,7 +170,7 @@ namespace Assets.Scripts.Behaviour
             }
             TileBehaviour min = tb;
             foreach (TileBehaviour neighbour in tb.tile.GetAllNeighbours())
-                if (min.tile.Weight > neighbour.tile.Weight) min = neighbour;
+                if (min.tile.WeightWalk > neighbour.tile.WeightWalk) min = neighbour;
             path.Push(min.tile);
             min.ChangeToPath();
             FindPath(min,path);
@@ -199,7 +184,12 @@ namespace Assets.Scripts.Behaviour
         void Start()
         {
             if (Soldier != null) Soldier.GetComponent<Util.Abstract.Soldier>().Position = this;
+            tile.ResetWeight();
         }
 
+        public void NotifyChange()
+        {
+            SetDefault();
+        }
     }
 }

@@ -1,13 +1,15 @@
 ﻿
 
+using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.Behaviour;
+using Assets.Scripts.UI;
 using Assets.Scripts.Util.Interfaces;
 using UnityEngine;
 
 namespace Assets.Scripts.Util.Abstract
 {
-    public abstract  class Soldier : MonoBehaviour, ISoldier
+    public abstract  class Soldier : MonoBehaviour, ISoldier, IObserverble
     {
         [SerializeField] private const float MinNextTileDist = 0.1f;
 
@@ -16,11 +18,14 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField, HideInInspector] private bool _rotateAndStop;
         [SerializeField, HideInInspector] private Tile _curTile;
         [SerializeField, HideInInspector] private Vector3 _curTilePos;
+        [SerializeField, HideInInspector] private List<ISoldierObserver> _playerObservers;
         
         [SerializeField, HideInInspector] protected Buff _buff;
+        [SerializeField, HideInInspector] protected List<Buff> _Buffs;
         
         [SerializeField] public int NumberOfAttacks;
         [SerializeField] public int MissPrecent;
+        [SerializeField] public GameObject HealthPrefeb;
         [SerializeField] public int CriticalPrecent;
         [SerializeField] public int MinDamege;
         [SerializeField] public int MaxDamege;
@@ -29,7 +34,8 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField] public int HitRange;
         [SerializeField] public int SpecialHitParameter;
         [SerializeField] public int CriticalHit;
-        [SerializeField] public IHealth Health;
+        [SerializeField] public int MaxHealth;
+        [SerializeField] public HealthBar Health;
         [SerializeField, HideInInspector] public TileBehaviour Position;
         [SerializeField, HideInInspector] public TileBehaviour Destination = null;
         [SerializeField, HideInInspector] public bool InAttackRange;
@@ -37,6 +43,11 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField] public float RotationSpeed;
                 
         public abstract void SpecialHit(ISoldier enemy);
+        
+        public void ClearAll()
+        {
+            NotifyAll();
+        }
 
         public abstract void BuffAction(Soldier teamSoldier);
 
@@ -44,31 +55,50 @@ namespace Assets.Scripts.Util.Abstract
         {
             _isMoving = false;
             _rotateAndStop = false;
+            _playerObservers = new List<ISoldierObserver>();
+            _Buffs = new List<Buff>();
         }
+
 
         public void GetBuffFromTeam(Buff buff)
         {
+            _Buffs.Add(buff);
             buff.DoBuff(this);
+        }
+
+        public void CheckBuffs()
+        {
+            Stack<int> placeToDelete = new Stack<int>();
+            for (int i = 0; i < _Buffs.Count; i++)
+            {
+                _Buffs[i].DecTurns();
+                if(!_Buffs[i].CheckIfTurn()) placeToDelete.Push(i);
+            }
+
+            foreach (var i in placeToDelete) _Buffs.RemoveAt(i);
         }
 
         public void ShowHitRange()
         {
             Position.CalHitRange(HitRange);
+            InAttackRange = true;
         }
 
         public void WalkRadius()
         {
-            Position.showAllPaths(WalkRange);
+            Position.ShowAllPaths(WalkRange);
         }
 
-        public void Demage(ISoldier enemy)
+        public IEnumerator Demage(ISoldier enemy)
         {
             for (int i = 0; i < NumberOfAttacks; i++)
             {
+
                 int demage = CalHit();
                 if (CheckIfCritical())
                     demage *= CriticalHit;
-                enemy.GetHealth().TakeDemage(demage);
+                enemy.GetHealth().TakeDamage(demage);
+                yield return new WaitForSeconds(0.5f);
             }
         }
 
@@ -86,13 +116,7 @@ namespace Assets.Scripts.Util.Abstract
         {
             return Health;
         }
-
-        public void ClearAll()
-        {
-            Position.Clear(WalkRange);
-            Position.Clear(HitRange);
-        }
-        
+       
         public bool IsMoving()
         {
             return _isMoving;
@@ -114,28 +138,40 @@ namespace Assets.Scripts.Util.Abstract
             {
                 Soldier selectSoldier = GridManager.instance.SelectedSoldier;
                 if (selectSoldier == null) GridManager.instance.SelectedSoldier = this;
-                else if (selectSoldier != this && !InAttackRange)
-                {
-                    if (selectSoldier.IsMoving()) return;
-                    selectSoldier.ClearAll();
-                    GridManager.instance.SelectedSoldier = this;
-                }
-                else if (InAttackRange)
+                else if (InAttackRange && !selectSoldier.IsMoving())
                 {
                     if(tag == selectSoldier.tag) selectSoldier.BuffAction(this);
-                    else selectSoldier.Demage(this);
+                    else StartCoroutine(selectSoldier.Demage(this));
+                    GridManager.instance.SelectedSoldier.EndOfTurnAction();
+                }
+            }
+            if (Input.GetMouseButtonDown(1))
+            {
+                Soldier selectedSoldier = GridManager.instance.SelectedSoldier;
+                if (selectedSoldier == null) return;
+                else if (InAttackRange && !selectedSoldier.IsMoving() && tag != selectedSoldier.tag)
+                {
+                    selectedSoldier.SpecialHit(this);
+                    GridManager.instance.SelectedSoldier.EndOfTurnAction();
                 }
             }
         }
 
-        void EndMovement()
+        void EndOfTurnAction()
+        {
+            NotifyAll();
+            GridManager.instance.SelectedSoldier = null;
+        }
+
+        void EndOfSoldierTurn()
         {
             _isMoving = false;
             _rotateAndStop = false;
-            Position.Clear(WalkRange);
+            NotifyAll();
             Position.Soldier = null;
             Position = Destination;
             Destination = null;
+            GridManager.instance.SelectedSoldier = null;
         }
 
         void MoveTowards(Vector3 position)
@@ -155,7 +191,7 @@ namespace Assets.Scripts.Util.Abstract
             {
                 if (_rotateAndStop)
                 {
-                    EndMovement();
+                    EndOfSoldierTurn();
                     return;
                 }
                 transform.position += forward * Time.deltaTime;
@@ -175,17 +211,18 @@ namespace Assets.Scripts.Util.Abstract
         void Start()
         {
             Init();
+            var health = Instantiate(HealthPrefeb);
+            health.GetComponent<HealthBar>().Soldier = this;
+            health.GetComponent<UiFollowObject>().Following = transform;
         }
         
         void Update()
         {
-            if (Input.GetKeyDown("d"))
-            {
-                SpecialHit(this);              
-            }
             if (!Health.IsAlive())
+            {
+                Health.gameObject.SetActive(false);
                 gameObject.SetActive(false);
-         
+            }
             if (!_isMoving) return;
 
             if ((_curTilePos - transform.position).magnitude < MinNextTileDist)
@@ -197,12 +234,34 @@ namespace Assets.Scripts.Util.Abstract
                 }
                 else
                 {
-                    EndMovement();
+                    EndOfSoldierTurn();
                     return;
                 }
             }
             MoveTowards(_curTilePos);
         }
-    }
 
+        public void AddObserver(ISoldierObserver observer)
+        {
+            _playerObservers.Add(observer);
+        }
+
+        public void RemoveObserver(ISoldierObserver observer)
+        {
+            _playerObservers.Remove(observer);
+        }
+
+        public void NotifyAll()
+        {
+            foreach (ISoldierObserver soldierObserver in _playerObservers)
+                soldierObserver.NotifyChange();
+            _playerObservers.Clear();
+        }
+
+        void OnDisable()
+        {
+            Position.Soldier = null;
+            Position = null;
+        }
+    }
 }

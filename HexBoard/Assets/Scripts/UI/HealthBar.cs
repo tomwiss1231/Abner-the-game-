@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts.Behaviour;
+using Assets.Scripts.Util;
 using Assets.Scripts.Util.Abstract;
 using Assets.Scripts.Util.Interfaces;
 using UnityEngine;
@@ -12,25 +13,27 @@ namespace Assets.Scripts.UI
         public SpriteRenderer ForegroundRenderer;
         public Color MaxHealthColor = new Color(64 / 255f, 137 / 255f, 255 / 255f);
         public Color MinHealthColor = new Color(255 / 255f, 63 / 255f, 63 / 255f);
-        public float MaxHealth = 100;
+        [HideInInspector] public float MaxHealth;
 
         private float _curHealth;
 
 
         void Start()
         {
+            MaxHealth = Soldier.MaxHealth;
             _curHealth = MaxHealth;
             Soldier.Health = this;
             UpdateHealth();
         }
 
-        public void TakeDemage(float demage)
+        public void TakeDamage(float damage)
         {
-            float result = _curHealth - demage;
+            FloatingText.Show(string.Format("-{0}", damage), "PlayerTakeDamageText",
+                new FromWorldPointTextPositioner(Camera.main, transform.position, 2f, 60f));
+            float result = _curHealth - damage;
             if (result < 0)
                 result = 0;
             _curHealth = result;
-            print(_curHealth + "%");
             UpdateHealth();
         }
 

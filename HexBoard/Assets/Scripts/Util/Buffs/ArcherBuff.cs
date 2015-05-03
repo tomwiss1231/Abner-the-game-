@@ -11,5 +11,11 @@ namespace Assets.Scripts.Util.Buffs
             soldier.MaxDamege *= 3;
             soldier.MinDamege *= 3;
         }
+
+        public override void DisableBuff(Soldier soldier)
+        {
+            soldier.MaxDamege /= 3;
+            soldier.MinDamege /= 3;
+        }
     }
 }

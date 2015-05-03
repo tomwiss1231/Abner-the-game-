@@ -5,12 +5,13 @@ namespace Assets.Scripts.Util.Abstract
     public abstract class Buff
     {
         private int _turnleft;
-        
-        public Buff(int turnLeft)
+
+        protected Buff(int turnLeft)
         {
             _turnleft = turnLeft;
         }
         public abstract void DoBuff(Soldier soldier);
+        public abstract void DisableBuff(Soldier soldier);
 
         public  bool CheckIfTurn()
         {
