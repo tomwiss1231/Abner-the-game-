@@ -10,28 +10,37 @@ namespace Assets.Scripts.Behaviour.Soldier
     {
 
 
-        public override void SpecialHit(ISoldier enemy)
+        public override bool SpecialHit(ISoldier enemy)
         {
+            if (!SkillBar.DecSkillPoints(10)) return false;
             FloatingText.Show("Special!!!", "PlayerSpecialText",
-                new FromWorldPointTextPositioner(Camera.main, transform.position, 2f, 60f));
+            new FromWorldPointTextPositioner(Camera.main, transform.position, 2f, 60f));
             //TODO: specialHit ani.
             int damege = CalHit();
             if (CheckIfCritical())
                 damege *= CriticalHit;
             damege *= SpecialHitParameter;
             enemy.GetHealth().TakeDamage(damege);
+            return true;
+        }
+
+        public override void FillSkillBar()
+        {
+            SkillBar.AddSkillPoints(8);
         }
 
         public override void BuffAction(Util.Abstract.Soldier teamSoldier)
         {
             //TODO: buff ani.
-            _buff.DoBuff(teamSoldier);
+            WarCryBuff warCryBuff = new WarCryBuff();
+            warCryBuff.DoBuff(teamSoldier);
+            Buffs.Add(warCryBuff);
         }
 
         protected override void Init()
         {
             base.Init();
-            _buff = new WarCryBuff();
+            Buff = new WarCryBuff();
         }
     }
 }

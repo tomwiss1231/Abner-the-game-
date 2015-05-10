@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿#if UNITY_EDITOR
 using Assets.Scripts.Behaviour;
 using UnityEditor;
 using UnityEngine;
@@ -21,4 +18,4 @@ public class GridWindow : EditorWindow
     }
 
 }
-
+#endif

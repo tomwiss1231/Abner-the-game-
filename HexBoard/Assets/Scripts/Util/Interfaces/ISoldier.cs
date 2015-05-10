@@ -10,8 +10,8 @@ namespace Assets.Scripts.Util.Interfaces
         void Walk(Stack<Tile> path);
         bool IsMoving();
         void WalkRadius();
-        void ShowHitRange();
-        void SpecialHit(ISoldier enemy);
+        IEnumerator ShowHitRange();
+        bool SpecialHit(ISoldier enemy);
         void ClearAll();
         IHealth GetHealth();
     }

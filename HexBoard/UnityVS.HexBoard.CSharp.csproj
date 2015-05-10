@@ -7,16 +7,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{1386A7BF-A357-F884-BB4A-A7DF0573F864}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <AssemblyName>Assembly-CSharp</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile>
-    </CompilerResponseFile>
+    <CompilerResponseFile></CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows:5</UnityBuildTarget>
     <UnityVersion>5.0.0f4</UnityVersion>
@@ -76,27 +74,31 @@
     <Compile Include="Assets\5MinuteGUI\Scripts\Splash\SplashImages.cs" />
     <Compile Include="Assets\5MinuteGUI\Standard Assets\Image Effects (Pro Only)\GlowEffect.cs" />
     <Compile Include="Assets\Scripts\Behaviour\CameraLook.cs" />
-    <Compile Include="Assets\Scripts\Behaviour\GameManeger.cs" />
+    <Compile Include="Assets\Scripts\Behaviour\GameManager.cs" />
     <Compile Include="Assets\Scripts\Behaviour\Grid.cs" />
     <Compile Include="Assets\Scripts\Behaviour\GridManager.cs" />
+    <Compile Include="Assets\Scripts\Behaviour\HideBehaviour.cs" />
+    <Compile Include="Assets\Scripts\Behaviour\MainMenuBehavior.cs" />
+    <Compile Include="Assets\Scripts\Behaviour\Obstacle.cs" />
     <Compile Include="Assets\Scripts\Behaviour\Player.cs" />
     <Compile Include="Assets\Scripts\Behaviour\Soldier\Warrior.cs" />
     <Compile Include="Assets\Scripts\Behaviour\TileBehaviour.cs" />
     <Compile Include="Assets\Scripts\UI\FloatingText.cs" />
     <Compile Include="Assets\Scripts\UI\HealthBar.cs" />
+    <Compile Include="Assets\Scripts\UI\SkillBar.cs" />
     <Compile Include="Assets\Scripts\UI\UiFollowObject.cs" />
+    <Compile Include="Assets\Scripts\Util\Abstract\Buff.cs" />
     <Compile Include="Assets\Scripts\Util\Abstract\Soldier.cs" />
     <Compile Include="Assets\Scripts\Util\Buffs\ArcherBuff.cs" />
     <Compile Include="Assets\Scripts\Util\Buffs\MageBuff.cs" />
     <Compile Include="Assets\Scripts\Util\Buffs\WarCryBuff.cs" />
     <Compile Include="Assets\Scripts\Util\FromWorldPointTextPositioner.cs" />
     <Compile Include="Assets\Scripts\Util\Interfaces\GridObject.cs" />
-    <Compile Include="Assets\Scripts\Util\Abstract\Buff.cs" />
     <Compile Include="Assets\Scripts\Util\Interfaces\IFloatingTextPositioner.cs" />
     <Compile Include="Assets\Scripts\Util\Interfaces\IHealth.cs" />
     <Compile Include="Assets\Scripts\Util\Interfaces\ISoldier.cs" />
-    <Compile Include="Assets\Scripts\Util\Interfaces\Observerble.cs" />
     <Compile Include="Assets\Scripts\Util\Interfaces\ISoldierObserver.cs" />
+    <Compile Include="Assets\Scripts\Util\Interfaces\Observerble.cs" />
     <Compile Include="Assets\Scripts\Util\Point.cs" />
     <Compile Include="Assets\Scripts\Util\Tile.cs" />
     <Compile Include="Assets\Scripts\Windows\GridWindow .cs" />
@@ -108,6 +110,5 @@
     <None Include="Assets\Fonts\Jupiter\LICENSE.txt" />
     <None Include="Assets\Materials\UI-Default-No-Alpha.shader" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2010\UnityVS.CSharp.targets" />
 </Project>

@@ -1,4 +1,6 @@
-﻿using Assets.Scripts.Util.Abstract;
+﻿using System.Collections;
+using Assets.Scripts.Util.Abstract;
+using UnityEngine;
 
 namespace Assets.Scripts.Util.Buffs
 {

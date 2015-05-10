@@ -41,12 +41,12 @@ namespace Assets.Scripts.Behaviour
             if(n == 0) return;
             if (IsOccupied())
             {
-                GridManager.instance.SelectedSoldier.AddObserver(this);
+/*                GridManager.instance.SelectedSoldier.AddObserver(this);
                 Util.Abstract.Soldier soldier = Soldier.GetComponent<Util.Abstract.Soldier>(); 
-                soldier.InAttackRange = true;
+                //soldier.InAttackRange = true;
                 if(soldier.tag.Equals(teamTag)) ChangeToBuff(); 
                 else ChangeToTarget();
-                return;
+                return;*/
             }
             IsNeighbour = true;
             tile.WeightArea = weight + 1;
@@ -106,6 +106,8 @@ namespace Assets.Scripts.Behaviour
 
         void OnMouseOver()
         {
+            if (GridManager.instance.SelectedSoldier != null && GridManager.instance.SelectedSoldier.CheckingArea)
+                return;
             if (Input.GetMouseButtonDown(0))
             {
                 if (!IsNeighbour || GridManager.instance.SelectedSoldier.IsMoving()) return;
@@ -130,22 +132,22 @@ namespace Assets.Scripts.Behaviour
             ChangeColor(false, true, false, false, false);
         }
 
-        void ChangeToDefault()
+        public void ChangeToDefault()
         {
             ChangeColor(true, false, false, false, false);
         }
         
-        void ChangeToPath()
+        public void ChangeToPath()
         {
             ChangeColor(false, false, true, false, false);
         }
         
-        void ChangeToTarget()
+        public void ChangeToTarget()
         {
             ChangeColor(false, false, false, true, false);
         }
 
-        void ChangeToBuff()
+        public void ChangeToBuff()
         {
             ChangeColor(false, false, false, false, true);
         }

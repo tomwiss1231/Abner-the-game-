@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using Assets.Scripts.UI;
 using Assets.Scripts.Util;
+ #if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace Assets.Scripts.Behaviour
@@ -35,7 +37,8 @@ namespace Assets.Scripts.Behaviour
             {
                 SelectedSoldier.ClearAll();
                 SelectedSoldier.WalkRadius();
-                SelectedSoldier.ShowHitRange();
+                StartCoroutine(SelectedSoldier.ShowHitRange());
+//                SelectedSoldier.ShowHitRange();
             }
         }
 
@@ -116,7 +119,7 @@ namespace Assets.Scripts.Behaviour
 
             hexGridGO.transform.parent = Ground.transform.parent;
             hexGridGO.transform.position = new Vector3(Ground.transform.position.x, Ground.transform.position.y + 0.155f, Ground.transform.position.z);
-            Selection.activeGameObject = hexGridGO;
+//            Selection.activeGameObject = hexGridGO;
         }
 
         public void init()

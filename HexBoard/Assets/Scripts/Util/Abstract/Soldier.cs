@@ -1,15 +1,17 @@
 ﻿
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.Behaviour;
 using Assets.Scripts.UI;
 using Assets.Scripts.Util.Interfaces;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.Util.Abstract
 {
-    public abstract  class Soldier : MonoBehaviour, ISoldier, IObserverble
+    public abstract  class Soldier : MonoBehaviour, ISoldier, IObserverble, ISoldierObserver
     {
         [SerializeField] private const float MinNextTileDist = 0.1f;
 
@@ -20,12 +22,15 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField, HideInInspector] private Vector3 _curTilePos;
         [SerializeField, HideInInspector] private List<ISoldierObserver> _playerObservers;
         
-        [SerializeField, HideInInspector] protected Buff _buff;
-        [SerializeField, HideInInspector] protected List<Buff> _Buffs;
+        [SerializeField, HideInInspector] protected Buff Buff;
+        [SerializeField, HideInInspector] private Player _player;
+        [SerializeField, HideInInspector] protected List<Buff> Buffs;
         
         [SerializeField] public int NumberOfAttacks;
         [SerializeField] public int MissPrecent;
         [SerializeField] public GameObject HealthPrefeb;
+        [SerializeField] public GameObject SkillBarPrefeb;
+        [SerializeField] public GameObject ReyPrefeb;
         [SerializeField] public int CriticalPrecent;
         [SerializeField] public int MinDamege;
         [SerializeField] public int MaxDamege;
@@ -35,14 +40,19 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField] public int SpecialHitParameter;
         [SerializeField] public int CriticalHit;
         [SerializeField] public int MaxHealth;
+        [SerializeField] public int MaxSkill;
         [SerializeField] public HealthBar Health;
+        [SerializeField] public SkillBar SkillBar;
         [SerializeField, HideInInspector] public TileBehaviour Position;
         [SerializeField, HideInInspector] public TileBehaviour Destination = null;
         [SerializeField, HideInInspector] public bool InAttackRange;
         [SerializeField] public float WalkSpeed;
         [SerializeField] public float RotationSpeed;
+        [SerializeField] public bool CheckingArea { get; private set; }
+        [SerializeField] public bool IsHideing { get;  set; }
                 
-        public abstract void SpecialHit(ISoldier enemy);
+        public abstract bool SpecialHit(ISoldier enemy);
+        public abstract void FillSkillBar();
         
         public void ClearAll()
         {
@@ -56,32 +66,51 @@ namespace Assets.Scripts.Util.Abstract
             _isMoving = false;
             _rotateAndStop = false;
             _playerObservers = new List<ISoldierObserver>();
-            _Buffs = new List<Buff>();
+            Buffs = new List<Buff>();
+            _player = (GameManager.Instans.Player1.tag.Equals(tag))
+                ? GameManager.Instans.Player1
+                : GameManager.Instans.Player2;
+            _player.AddSoldier(this);
         }
 
 
         public void GetBuffFromTeam(Buff buff)
         {
-            _Buffs.Add(buff);
+            Buffs.Add(buff);
             buff.DoBuff(this);
         }
 
-        public void CheckBuffs()
+        public IEnumerator CheckBuffs()
         {
             Stack<int> placeToDelete = new Stack<int>();
-            for (int i = 0; i < _Buffs.Count; i++)
+            for (int i = 0; i < Buffs.Count; i++)
             {
-                _Buffs[i].DecTurns();
-                if(!_Buffs[i].CheckIfTurn()) placeToDelete.Push(i);
+                Buffs[i].DecTurns();
+                if (!Buffs[i].CheckIfTurn())
+                {
+                    placeToDelete.Push(i);
+                    Buffs[i].DisableBuff(this);
+                    yield return new WaitForSeconds(0.5f);
+                }
             }
-
-            foreach (var i in placeToDelete) _Buffs.RemoveAt(i);
+            foreach (var i in placeToDelete) Buffs.RemoveAt(i);
         }
 
-        public void ShowHitRange()
+        public IEnumerator ShowHitRange()
         {
-            Position.CalHitRange(HitRange);
-            InAttackRange = true;
+            CheckingArea = true;
+            var go = Instantiate(ReyPrefeb);
+            go.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
+            go.transform.localScale = new Vector3(1, 1, HitRange);
+            
+            for (int i = 0; i <= 72; i++)
+            {
+                go.transform.RotateAround(transform.position, Vector3.up, 5);
+                yield return new WaitForEndOfFrame();
+            }
+            
+            Destroy(go);
+            CheckingArea = false;
         }
 
         public void WalkRadius()
@@ -134,10 +163,12 @@ namespace Assets.Scripts.Util.Abstract
 
         private void OnMouseOver()
         {
+            if (GridManager.instance.SelectedSoldier != null && GridManager.instance.SelectedSoldier.CheckingArea)
+                return;
             if (Input.GetMouseButtonDown(0))
             {
                 Soldier selectSoldier = GridManager.instance.SelectedSoldier;
-                if (selectSoldier == null) GridManager.instance.SelectedSoldier = this;
+                if (_player.NowPalying && selectSoldier == null) GridManager.instance.SelectedSoldier = this;
                 else if (InAttackRange && !selectSoldier.IsMoving())
                 {
                     if(tag == selectSoldier.tag) selectSoldier.BuffAction(this);
@@ -151,7 +182,7 @@ namespace Assets.Scripts.Util.Abstract
                 if (selectedSoldier == null) return;
                 else if (InAttackRange && !selectedSoldier.IsMoving() && tag != selectedSoldier.tag)
                 {
-                    selectedSoldier.SpecialHit(this);
+                    if(!selectedSoldier.SpecialHit(this)) return;
                     GridManager.instance.SelectedSoldier.EndOfTurnAction();
                 }
             }
@@ -160,11 +191,13 @@ namespace Assets.Scripts.Util.Abstract
         void EndOfTurnAction()
         {
             NotifyAll();
+            _player.DecTurns();
             GridManager.instance.SelectedSoldier = null;
         }
 
         void EndOfSoldierTurn()
         {
+            _player.DecTurns();
             _isMoving = false;
             _rotateAndStop = false;
             NotifyAll();
@@ -211,9 +244,15 @@ namespace Assets.Scripts.Util.Abstract
         void Start()
         {
             Init();
+            
             var health = Instantiate(HealthPrefeb);
+            var skill = Instantiate(SkillBarPrefeb);
+            
             health.GetComponent<HealthBar>().Soldier = this;
             health.GetComponent<UiFollowObject>().Following = transform;
+
+            skill.GetComponent<SkillBar>().Soldier = this;
+            skill.GetComponent<UiFollowObject>().Following = transform;
         }
         
         void Update()
@@ -221,6 +260,7 @@ namespace Assets.Scripts.Util.Abstract
             if (!Health.IsAlive())
             {
                 Health.gameObject.SetActive(false);
+                SkillBar.gameObject.SetActive(false);
                 gameObject.SetActive(false);
             }
             if (!_isMoving) return;
@@ -262,6 +302,26 @@ namespace Assets.Scripts.Util.Abstract
         {
             Position.Soldier = null;
             Position = null;
+        }
+
+        void OnCollisionEnter(Collision collision)
+        {
+            try
+            {
+                if (collision.gameObject.tag != "HitRange") return;
+                if (collision.gameObject.tag == "HitRange" && IsHideing && GridManager.instance.SelectedSoldier.tag != tag) return;
+                InAttackRange = true;
+                GridManager.instance.SelectedSoldier.AddObserver(this);
+                if (GridManager.instance.SelectedSoldier.tag == tag)
+                    Position.ChangeToBuff();
+                else Position.ChangeToTarget();
+            }
+            catch(NullReferenceException ex) {}
+        }
+
+        public void NotifyChange()
+        {
+           Position.SetDefault();
         }
     }
 }

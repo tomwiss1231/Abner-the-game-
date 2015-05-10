@@ -9,9 +9,25 @@ namespace Assets.Scripts.Behaviour
         
         [SerializeField] private int _turns;
 
+        [SerializeField] private bool _nowPlaying;
+
+        [SerializeField] private Player _opponent;
+
+        [SerializeField] public bool NowPalying { get { return _nowPlaying; } set { _nowPlaying = value; }}
+
         public void AddSoldier(Util.Abstract.Soldier soldier)
         {
             _soldiers.Add(soldier);
+        }
+
+        public void AddOpponent(Player opponent)
+        {
+            _opponent = opponent;
+        }
+
+        public Player GetOpponent()
+        {
+            return _opponent;
         }
 
         public void RemoveSoldier(Util.Abstract.Soldier soldier)
@@ -32,6 +48,7 @@ namespace Assets.Scripts.Behaviour
         public void Restart()
         {
             _turns = 2;
+            _nowPlaying = true;
         }
 
         public bool EndTurn()
@@ -39,17 +56,19 @@ namespace Assets.Scripts.Behaviour
             return _turns <= 0;
         }
 
-        public void CheckSoldierBuff()
+        public void CheckSoldiers()
         {
             foreach (Util.Abstract.Soldier soldier in _soldiers)
             {
-                soldier.CheckBuffs();
+                StartCoroutine(soldier.CheckBuffs());
+                soldier.FillSkillBar();
             }
         }
 
-        void Start()
+        void Awake()
         {
             _turns = 0;
+            _nowPlaying = false;
         }
     }
 }
