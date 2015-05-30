@@ -110,10 +110,13 @@ namespace Assets.Scripts.Behaviour
                 return;
             if (Input.GetMouseButtonDown(0))
             {
-                if (!IsNeighbour || GridManager.instance.SelectedSoldier.IsMoving()) return;
+                var selectedSoldier = GridManager.instance.SelectedSoldier;
+                if (selectedSoldier == null) return;
+                if (!IsNeighbour || selectedSoldier.IsMoving()) return;
+                selectedSoldier.ClearWalkPath();
                 ChangeToPath();
-                Stack<Tile> path = new Stack<Tile>();
-                path.Push(tile);
+                Stack<TileBehaviour> path = new Stack<TileBehaviour>();
+                path.Push(this);
                 FindPath(this, path);
             }
         }
@@ -127,7 +130,7 @@ namespace Assets.Scripts.Behaviour
             transform.GetChild(4).gameObject.SetActive(buff);
         }
 
-        void ChangeToWalk()
+        public void ChangeToWalk()
         {
             ChangeColor(false, true, false, false, false);
         }
@@ -161,11 +164,11 @@ namespace Assets.Scripts.Behaviour
             tile.ResetWeight();
         }
 
-        void FindPath(TileBehaviour tb, Stack<Tile> path)
+        void FindPath(TileBehaviour tb, Stack<TileBehaviour> path)
         {
             if (tb.tile.WeightWalk == 0)
             {
-                tb.Soldier.GetComponent<Util.Abstract.Soldier>().Walk(path);
+                tb.Soldier.GetComponent<Util.Abstract.Soldier>().SavePath(path);
                 Soldier = tb.Soldier;
                 Soldier.GetComponent<Util.Abstract.Soldier>().Destination = this;
                 return;
@@ -173,7 +176,7 @@ namespace Assets.Scripts.Behaviour
             TileBehaviour min = tb;
             foreach (TileBehaviour neighbour in tb.tile.GetAllNeighbours())
                 if (min.tile.WeightWalk > neighbour.tile.WeightWalk) min = neighbour;
-            path.Push(min.tile);
+            path.Push(min);
             min.ChangeToPath();
             FindPath(min,path);
         }

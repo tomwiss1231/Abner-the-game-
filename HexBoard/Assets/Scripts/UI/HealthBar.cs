@@ -28,9 +28,16 @@ namespace Assets.Scripts.UI
 
         public void TakeDamage(float damage)
         {
-            FloatingText.Show(string.Format("-{0}", damage), "PlayerTakeDamageText",
+            if (Soldier.CheckIfMiss())
+            {
+                FloatingText.Show(string.Format("Miss"), "Miss",
                 new FromWorldPointTextPositioner(Camera.main, transform.position, 2f, 60f));
-            float result = _curHealth - damage;
+                return;
+            }
+            float afterCalDamage = Mathf.Round(damage - (damage/Soldier.Armor));
+            FloatingText.Show(string.Format("-{0}", afterCalDamage), "PlayerTakeDamageText",
+                new FromWorldPointTextPositioner(Camera.main, transform.position, 2f, 60f));
+            float result = _curHealth - afterCalDamage;
             if (result < 0)
                 result = 0;
             _curHealth = result;

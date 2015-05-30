@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 namespace Assets.Scripts.Behaviour
 {
@@ -9,6 +10,8 @@ namespace Assets.Scripts.Behaviour
         [SerializeField] public Player Player1;
         
         [SerializeField] public Player Player2;
+
+        
 
         void Awake()
         {
@@ -41,6 +44,16 @@ namespace Assets.Scripts.Behaviour
 
         void Update()
         {
+            if (Player1.GetSoldiers().Count == 0)
+            {
+                print("Player2 wins!!!!!");
+                Application.LoadLevel("MainMenu");
+            }
+            if (Player2.GetSoldiers().Count == 0)
+            {
+                print("Player1 wins!!!!!");
+                Application.LoadLevel("MainMenu");
+            }
             if (Player1.NowPalying && Player1.EndTurn())
             {
                 Player2Restart();

@@ -65,6 +65,11 @@ namespace Assets.Scripts.Behaviour
             }
         }
 
+        public List<Util.Abstract.Soldier> GetSoldiers()
+        {
+            return _soldiers;
+        }
+
         void Awake()
         {
             _turns = 0;

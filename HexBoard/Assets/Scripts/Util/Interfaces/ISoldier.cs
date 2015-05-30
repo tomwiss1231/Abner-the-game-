@@ -1,19 +1,22 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Assets.Scripts.Behaviour;
+using Assets.Scripts.Util.Abstract;
 using UnityEngine;
 
 namespace Assets.Scripts.Util.Interfaces
 {
     public interface ISoldier
     {
-        IEnumerator Demage(ISoldier enemy); //TODO:Change the function to an array or overload the function.
-        void Walk(Stack<Tile> path);
+        IEnumerator Damage(ISoldier enemy); //TODO:Change the function to an array or overload the function.
+        void SavePath(Stack<TileBehaviour> path);
         bool IsMoving();
         void WalkRadius();
         IEnumerator ShowHitRange();
-        bool SpecialHit(ISoldier enemy);
+        void SpecialHit(ISoldier enemy);
         void ClearAll();
         IHealth GetHealth();
+        void GotHit();
     }
 }
 

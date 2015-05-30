@@ -6,6 +6,7 @@ using Assets.Scripts.Util;
 using UnityEditor;
 #endif
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Assets.Scripts.Behaviour
 {
@@ -19,6 +20,9 @@ namespace Assets.Scripts.Behaviour
 
         [SerializeField] public GameObject Ground;
         [SerializeField] public Material SelectM;
+        [SerializeField] public Button Cancel;
+        [SerializeField] public Button Action;
+        [SerializeField] public Button Special;
         [SerializeField, HideInInspector] public TileBehaviour selecetedTile = null;
 
         [SerializeField, HideInInspector] public Util.Abstract.Soldier SelectedSoldier = null;
@@ -42,12 +46,22 @@ namespace Assets.Scripts.Behaviour
             }
         }
 
+        public void DisableButtons()
+        {
+            Cancel.gameObject.SetActive(false);
+            Action.gameObject.SetActive(false);
+            Special.gameObject.SetActive(false);
+        }
+
         public void CancelEve()
         {
-            if (SelectedSoldier != null && !SelectedSoldier.IsMoving())
+            if (SelectedSoldier != null && !SelectedSoldier.IsMoving() && !SelectedSoldier.IsAttacking)
             {
                 SelectedSoldier.ClearAll();
+                SelectedSoldier.ResetDes();
                 SelectedSoldier = null;
+                Cancel.gameObject.SetActive(false);
+                Action.gameObject.SetActive(false);
             }
         }
 
@@ -134,6 +148,7 @@ namespace Assets.Scripts.Behaviour
             instance = this;
             setSizes();
             calcInitPos();
+            DisableButtons();
         }
     }
 }

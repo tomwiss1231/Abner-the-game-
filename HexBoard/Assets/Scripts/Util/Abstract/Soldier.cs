@@ -7,6 +7,7 @@ using Assets.Scripts.Behaviour;
 using Assets.Scripts.UI;
 using Assets.Scripts.Util.Interfaces;
 using UnityEngine;
+using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.Util.Abstract
@@ -15,7 +16,7 @@ namespace Assets.Scripts.Util.Abstract
     {
         [SerializeField] private const float MinNextTileDist = 0.1f;
 
-        [SerializeField] private Stack<Tile> _walkPosition;
+        [SerializeField] private Stack<TileBehaviour> _walkPosition;
         [SerializeField, HideInInspector] private bool _isMoving;
         [SerializeField, HideInInspector] private bool _rotateAndStop;
         [SerializeField, HideInInspector] private Tile _curTile;
@@ -23,7 +24,7 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField, HideInInspector] private List<ISoldierObserver> _playerObservers;
         
         [SerializeField, HideInInspector] protected Buff Buff;
-        [SerializeField, HideInInspector] private Player _player;
+        [SerializeField, HideInInspector] protected Player _player;
         [SerializeField, HideInInspector] protected List<Buff> Buffs;
         
         [SerializeField] public int NumberOfAttacks;
@@ -43,16 +44,20 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField] public int MaxSkill;
         [SerializeField] public HealthBar Health;
         [SerializeField] public SkillBar SkillBar;
+        [SerializeField] public Animator Controller;
         [SerializeField, HideInInspector] public TileBehaviour Position;
         [SerializeField, HideInInspector] public TileBehaviour Destination = null;
         [SerializeField, HideInInspector] public bool InAttackRange;
         [SerializeField] public float WalkSpeed;
         [SerializeField] public float RotationSpeed;
         [SerializeField] public bool CheckingArea { get; private set; }
+        [SerializeField] public bool IsAttacking { get; private set; }
+        [SerializeField] public bool IsGettingHit { get;  private set; }
         [SerializeField] public bool IsHideing { get;  set; }
                 
-        public abstract bool SpecialHit(ISoldier enemy);
+        public abstract void SpecialHit(ISoldier enemy);
         public abstract void FillSkillBar();
+        public abstract void ActivateBuffCast();
         
         public void ClearAll()
         {
@@ -60,11 +65,13 @@ namespace Assets.Scripts.Util.Abstract
         }
 
         public abstract void BuffAction(Soldier teamSoldier);
+        protected abstract string BuffName();
 
         protected virtual void Init()
         {
             _isMoving = false;
             _rotateAndStop = false;
+            IsAttacking = false;
             _playerObservers = new List<ISoldierObserver>();
             Buffs = new List<Buff>();
             _player = (GameManager.Instans.Player1.tag.Equals(tag))
@@ -99,18 +106,33 @@ namespace Assets.Scripts.Util.Abstract
         public IEnumerator ShowHitRange()
         {
             CheckingArea = true;
-            var go = Instantiate(ReyPrefeb);
-            go.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
-            go.transform.localScale = new Vector3(1, 1, HitRange);
-            
-            for (int i = 0; i <= 72; i++)
+            foreach (Soldier soldier in _player.GetOpponent().GetSoldiers())
             {
-                go.transform.RotateAround(transform.position, Vector3.up, 5);
-                yield return new WaitForEndOfFrame();
+                if (InRange(soldier))
+                {
+                    var heading = soldier.transform.position - transform.position;
+                    var distance = heading.magnitude;
+                    var direction = heading / distance;
+                    RaycastHit hit;
+                    Physics.Raycast(transform.position, direction, out hit,distance);
+                    yield return new WaitForEndOfFrame();
+                    if (hit.transform.gameObject.tag == "Obstacle") continue;
+                    AddObserver(soldier);
+                    soldier.InAttackRange = true;
+                    soldier.Position.ChangeToTarget();
+                }
             }
-            
-            Destroy(go);
             CheckingArea = false;
+        }
+
+        private bool InRange(Soldier soldier)
+        {
+            float x1 = transform.position.x,
+                    x2 = soldier.transform.position.x,
+                    y1 = transform.position.z,
+                    y2 = soldier.transform.position.z;
+            double d =  Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((y2 - y1), 2));
+            return d <= HitRange;
         }
 
         public void WalkRadius()
@@ -118,17 +140,27 @@ namespace Assets.Scripts.Util.Abstract
             Position.ShowAllPaths(WalkRange);
         }
 
-        public IEnumerator Demage(ISoldier enemy)
+        public IEnumerator Damage(ISoldier enemy)
         {
+
+            IsAttacking = true;
+            GridManager.instance.Action.onClick.RemoveAllListeners();
+            Controller.SetBool("IsWalk", false);
+            Controller.SetBool("IsIdle", false);
+            Controller.SetBool("IsAttack", true);
+            Controller.SetBool("IsHit", false);
             for (int i = 0; i < NumberOfAttacks; i++)
             {
 
                 int demage = CalHit();
                 if (CheckIfCritical())
                     demage *= CriticalHit;
+                yield return new WaitForSeconds(0.7f);
                 enemy.GetHealth().TakeDamage(demage);
-                yield return new WaitForSeconds(0.5f);
+                enemy.GotHit();
             }
+            EndOfTurnAction();
+            IsAttacking = false;
         }
 
         protected int CalHit()
@@ -141,24 +173,52 @@ namespace Assets.Scripts.Util.Abstract
             return Random.Range(0, 100) <= CriticalPrecent;
         }
 
+        public bool CheckIfMiss()
+        {
+            return Random.Range(0, 100) <= MissPrecent;
+        }
         public IHealth GetHealth()
         {
             return Health;
         }
-       
+
+        public void GotHit()
+        {
+            IsGettingHit = true;
+            Controller.SetBool("IsWalk", false);
+            Controller.SetBool("IsIdle", false);
+            Controller.SetBool("IsAttack", false);
+            Controller.SetBool("IsHit", true);
+            IsGettingHit = false;
+        }
+
         public bool IsMoving()
         {
             return _isMoving;
         }
 
 
-        public void Walk(Stack<Tile> path)
+        public void SavePath(Stack<TileBehaviour> path)
         {
             _walkPosition = path;
             path.Pop();
-            _curTile = path.Pop();
+            Button action = GridManager.instance.Action;
+            action.onClick.RemoveAllListeners();
+            action.onClick.AddListener(StartWalking);
+            action.transform.GetChild(0).GetComponent<Text>().text = "Walk";
+            action.gameObject.SetActive(true);
+        }
+
+        public void StartWalking()
+        {
+            GridManager.instance.Action.onClick.RemoveAllListeners();
+            _curTile = _walkPosition.Pop().tile;
             _curTilePos = CalcTilePos(_curTile);
             _isMoving = true;
+            Controller.SetBool("IsWalk", true);
+            Controller.SetBool("IsIdle", false);
+            Controller.SetBool("IsAttack", false);
+            Controller.SetBool("IsHit", false);
         }
 
         private void OnMouseOver()
@@ -168,12 +228,48 @@ namespace Assets.Scripts.Util.Abstract
             if (Input.GetMouseButtonDown(0))
             {
                 Soldier selectSoldier = GridManager.instance.SelectedSoldier;
-                if (_player.NowPalying && selectSoldier == null) GridManager.instance.SelectedSoldier = this;
-                else if (InAttackRange && !selectSoldier.IsMoving())
+                if (_player.NowPalying && selectSoldier == null)
                 {
-                    if(tag == selectSoldier.tag) selectSoldier.BuffAction(this);
-                    else StartCoroutine(selectSoldier.Demage(this));
-                    GridManager.instance.SelectedSoldier.EndOfTurnAction();
+                    GridManager.instance.SelectedSoldier = this;
+                    WalkRadius();
+                    StartCoroutine(ShowHitRange());
+                    ActivateBuffCast();
+                    GridManager.instance.Cancel.gameObject.SetActive(true);
+                }
+                else if (selectSoldier != null && (InAttackRange && !selectSoldier.IsMoving()))
+                {
+                    selectSoldier.ClearWalkPath();
+                    Button action = GridManager.instance.Action;
+                    action.onClick.RemoveAllListeners();
+                    action.gameObject.SetActive(true);
+                    if (tag == selectSoldier.tag)
+                    {
+                        action.onClick.AddListener(() => selectSoldier.BuffAction(this));
+                        action.transform.GetChild(0).GetComponent<Text>().text = selectSoldier.BuffName();
+                    }
+                    else
+                    {
+                        if (transform.position.x > selectSoldier.transform.position.x)
+                        {
+                            float x = selectSoldier.transform.position.x,
+                                y = selectSoldier.transform.position.y, 
+                                z = selectSoldier.transform.position.z;
+                            selectSoldier.transform.position = new Vector3(x+0.01f, y, z);
+                        }
+                        if (transform.position.x < selectSoldier.transform.position.x)
+                        {
+                            float x = selectSoldier.transform.position.x,
+                                y = selectSoldier.transform.position.y,
+                                z = selectSoldier.transform.position.z;
+                            selectSoldier.transform.position = new Vector3(x - 0.01f, y, z);
+                        }
+                        action.onClick.AddListener(() => StartCoroutine(selectSoldier.Damage(this)));
+                        action.transform.GetChild(0).GetComponent<Text>().text = "Attack";
+                        Button specialAtk = GridManager.instance.Special;
+                        specialAtk.gameObject.SetActive(true);
+                        specialAtk.onClick.RemoveAllListeners();
+                        specialAtk.onClick.AddListener(() => selectSoldier.SpecialHit(this));
+                    }
                 }
             }
             if (Input.GetMouseButtonDown(1))
@@ -182,17 +278,17 @@ namespace Assets.Scripts.Util.Abstract
                 if (selectedSoldier == null) return;
                 else if (InAttackRange && !selectedSoldier.IsMoving() && tag != selectedSoldier.tag)
                 {
-                    if(!selectedSoldier.SpecialHit(this)) return;
-                    GridManager.instance.SelectedSoldier.EndOfTurnAction();
+              
                 }
             }
         }
 
-        void EndOfTurnAction()
+        protected void EndOfTurnAction()
         {
             NotifyAll();
             _player.DecTurns();
             GridManager.instance.SelectedSoldier = null;
+            GridManager.instance.DisableButtons();
         }
 
         void EndOfSoldierTurn()
@@ -204,7 +300,16 @@ namespace Assets.Scripts.Util.Abstract
             Position.Soldier = null;
             Position = Destination;
             Destination = null;
+            _walkPosition = null;
             GridManager.instance.SelectedSoldier = null;
+            GridManager.instance.DisableButtons();
+        }
+
+        public void ResetDes()
+        {
+            if (_walkPosition == null) return;
+            _walkPosition = null;
+            Destination.Soldier = null;
         }
 
         void MoveTowards(Vector3 position)
@@ -231,7 +336,6 @@ namespace Assets.Scripts.Util.Abstract
             }
 
         }
-
 
         Vector3 CalcTilePos(Tile tile)
         {
@@ -263,13 +367,22 @@ namespace Assets.Scripts.Util.Abstract
                 SkillBar.gameObject.SetActive(false);
                 gameObject.SetActive(false);
             }
-            if (!_isMoving) return;
-
+            if (!_isMoving)
+            {
+                if (!IsAttacking && ! IsGettingHit)
+                {
+                    Controller.SetBool("IsWalk", false);
+                    Controller.SetBool("IsAttack", false);
+                    Controller.SetBool("IsIdle", true);
+                    Controller.SetBool("IsHit", false);
+                }
+                return;
+            }
             if ((_curTilePos - transform.position).magnitude < MinNextTileDist)
             {
                 if (_walkPosition.Count >= 1)
                 {
-                    _curTile = _walkPosition.Pop();
+                    _curTile = _walkPosition.Pop().tile;
                     _curTilePos = CalcTilePos(_curTile);
                 }
                 else
@@ -302,26 +415,21 @@ namespace Assets.Scripts.Util.Abstract
         {
             Position.Soldier = null;
             Position = null;
-        }
-
-        void OnCollisionEnter(Collision collision)
-        {
-            try
-            {
-                if (collision.gameObject.tag != "HitRange") return;
-                if (collision.gameObject.tag == "HitRange" && IsHideing && GridManager.instance.SelectedSoldier.tag != tag) return;
-                InAttackRange = true;
-                GridManager.instance.SelectedSoldier.AddObserver(this);
-                if (GridManager.instance.SelectedSoldier.tag == tag)
-                    Position.ChangeToBuff();
-                else Position.ChangeToTarget();
-            }
-            catch(NullReferenceException ex) {}
+            _player.RemoveSoldier(this);
         }
 
         public void NotifyChange()
         {
            Position.SetDefault();
+        }
+
+        public void ClearWalkPath()
+        {
+            if (_walkPosition == null) return;
+            Position.ChangeToBuff();
+            foreach (TileBehaviour tb in _walkPosition) tb.ChangeToWalk();
+            Destination.Soldier = null;
+
         }
     }
 }
