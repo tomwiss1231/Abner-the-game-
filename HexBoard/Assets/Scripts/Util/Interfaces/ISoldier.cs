@@ -17,6 +17,7 @@ namespace Assets.Scripts.Util.Interfaces
         void ClearAll();
         IHealth GetHealth();
         void GotHit();
+        void Die();
     }
 }
 

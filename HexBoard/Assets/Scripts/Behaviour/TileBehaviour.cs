@@ -188,8 +188,10 @@ namespace Assets.Scripts.Behaviour
 
         void Start()
         {
+            if (!Application.isPlaying) return;
             if (Soldier != null) Soldier.GetComponent<Util.Abstract.Soldier>().Position = this;
             tile.ResetWeight();
+            GameManager.Instans.AddTile(this);
         }
 
         public void NotifyChange()

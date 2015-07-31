@@ -80,6 +80,7 @@
     <Compile Include="Assets\Scripts\Behaviour\Grid.cs" />
     <Compile Include="Assets\Scripts\Behaviour\GridManager.cs" />
     <Compile Include="Assets\Scripts\Behaviour\HideBehaviour.cs" />
+    <Compile Include="Assets\Scripts\Behaviour\MainMenuBehavior.cs" />
     <Compile Include="Assets\Scripts\Behaviour\Obstacle.cs" />
     <Compile Include="Assets\Scripts\Behaviour\Player.cs" />
     <Compile Include="Assets\Scripts\Behaviour\Soldier\Hunter.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="Assets\Scripts\Util\Interfaces\ISoldierObserver.cs" />
     <Compile Include="Assets\Scripts\Util\Interfaces\Observerble.cs" />
     <Compile Include="Assets\Scripts\Util\Point.cs" />
+    <Compile Include="Assets\Scripts\Util\Spawn.cs" />
     <Compile Include="Assets\Scripts\Util\Tile.cs" />
     <Compile Include="Assets\Scripts\Windows\GridWindow .cs" />
   </ItemGroup>

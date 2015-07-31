@@ -10,9 +10,17 @@ namespace Assets.Scripts.UI
 	{
 	    public Vector2 Offset;
 	    public Transform Following;
+	    public bool _finish ;
+
+	    public void finish()
+	    {
+	        _finish = true;
+	    }
+
 
 	    void Update()
 	    {
+            if(!_finish) return;
 	        transform.position = Following.transform.position + (Vector3) Offset;
 	    }
 	}

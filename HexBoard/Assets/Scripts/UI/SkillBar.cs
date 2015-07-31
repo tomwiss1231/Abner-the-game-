@@ -19,10 +19,7 @@ namespace Assets.Scripts.UI
 
         void Start()
         {
-            MaxSkill = Soldier.MaxSkill;
-            _curSkill = MaxSkill;
-            Soldier.SkillBar = this;
-            UpdateSkillBar();
+
 
         }
 
@@ -107,6 +104,14 @@ namespace Assets.Scripts.UI
         public void RestoreHealth()
         {
             _curSkill = MaxSkill;
+            UpdateSkillBar();
+        }
+
+        public void Launch()
+        {
+            MaxSkill = Soldier.MaxSkill;
+            _curSkill = MaxSkill;
+            Soldier.SkillBar = this;
             UpdateSkillBar();
         }
     }

@@ -20,6 +20,11 @@ namespace Assets.Scripts.UI
 
         void Start()
         {
+
+        }
+
+        public void Launch()
+        {
             MaxHealth = Soldier.MaxHealth;
             _curHealth = MaxHealth;
             Soldier.Health = this;

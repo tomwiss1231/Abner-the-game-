@@ -50,6 +50,7 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField, HideInInspector] public bool InAttackRange;
         [SerializeField] public float WalkSpeed;
         [SerializeField] public float RotationSpeed;
+        [SerializeField] private bool _finish;
         [SerializeField] public bool CheckingArea { get; private set; }
         [SerializeField] public bool IsAttacking { get; private set; }
         [SerializeField] public bool IsGettingHit { get;  private set; }
@@ -116,7 +117,7 @@ namespace Assets.Scripts.Util.Abstract
                     RaycastHit hit;
                     Physics.Raycast(transform.position, direction, out hit,distance);
                     yield return new WaitForEndOfFrame();
-                    if (hit.transform.gameObject.tag == "Obstacle") continue;
+                    if (hit.transform  != null && hit.transform.gameObject != null && hit.transform.gameObject.tag == "Obstacle") continue;
                     AddObserver(soldier);
                     soldier.InAttackRange = true;
                     soldier.Position.ChangeToTarget();
@@ -149,15 +150,22 @@ namespace Assets.Scripts.Util.Abstract
             Controller.SetBool("IsIdle", false);
             Controller.SetBool("IsAttack", true);
             Controller.SetBool("IsHit", false);
-            for (int i = 0; i < NumberOfAttacks; i++)
+            bool isDead = false;
+            for (int i = 0; i < NumberOfAttacks && !isDead; i++)
             {
-
                 int demage = CalHit();
                 if (CheckIfCritical())
                     demage *= CriticalHit;
+
                 yield return new WaitForSeconds(0.7f);
+
                 enemy.GetHealth().TakeDamage(demage);
                 enemy.GotHit();
+                if (!enemy.GetHealth().IsAlive())
+                {
+                    enemy.Die();
+                    isDead = true;
+                }
             }
             EndOfTurnAction();
             IsAttacking = false;
@@ -305,6 +313,11 @@ namespace Assets.Scripts.Util.Abstract
             GridManager.instance.DisableButtons();
         }
 
+        public void Finish()
+        {
+            _finish = true;
+        }
+
         public void ResetDes()
         {
             if (_walkPosition == null) return;
@@ -353,20 +366,19 @@ namespace Assets.Scripts.Util.Abstract
             var skill = Instantiate(SkillBarPrefeb);
             
             health.GetComponent<HealthBar>().Soldier = this;
+            health.GetComponent<HealthBar>().Launch();
             health.GetComponent<UiFollowObject>().Following = transform;
+            health.GetComponent<UiFollowObject>().finish();
 
             skill.GetComponent<SkillBar>().Soldier = this;
+            skill.GetComponent<SkillBar>().Launch();
             skill.GetComponent<UiFollowObject>().Following = transform;
+            skill.GetComponent<UiFollowObject>().finish();
         }
         
         void Update()
         {
-            if (!Health.IsAlive())
-            {
-                Health.gameObject.SetActive(false);
-                SkillBar.gameObject.SetActive(false);
-                gameObject.SetActive(false);
-            }
+            if (!_finish) return;
             if (!_isMoving)
             {
                 if (!IsAttacking && ! IsGettingHit)
@@ -416,10 +428,12 @@ namespace Assets.Scripts.Util.Abstract
             Position.Soldier = null;
             Position = null;
             _player.RemoveSoldier(this);
+            print("Done!" + gameObject.name);
         }
 
         public void NotifyChange()
         {
+           if (Position == null) return;
            Position.SetDefault();
         }
 
@@ -430,6 +444,21 @@ namespace Assets.Scripts.Util.Abstract
             foreach (TileBehaviour tb in _walkPosition) tb.ChangeToWalk();
             Destination.Soldier = null;
 
+        }
+
+        public void Die()
+        {
+            Position.SetDefault();
+            Health.gameObject.SetActive(false);
+            SkillBar.gameObject.SetActive(false);
+            gameObject.SetActive(false);
+
+        }
+
+        public void SetPlayer(Player player)
+        {
+            _player = player;
+            _player.AddSoldier(this);
         }
     }
 }

@@ -33,6 +33,7 @@ namespace Assets.Scripts.Behaviour
         public void RemoveSoldier(Util.Abstract.Soldier soldier)
         {
             _soldiers.Remove(soldier);
+
         }
 
         public void DecTurns()
