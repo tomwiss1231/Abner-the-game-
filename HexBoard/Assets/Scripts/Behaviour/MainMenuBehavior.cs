@@ -2,7 +2,7 @@
 
 namespace Assets.Scripts.Behaviour
 {
-    public class MainMenuBehavior : MonoBehaviour
+    public class MainMenuBehavior : Photon.MonoBehaviour
     {
         public void StartGame()
         {

@@ -2,7 +2,7 @@
 
 namespace Assets.Scripts.Behaviour
 {
-    public class CameraLook : MonoBehaviour
+    public class CameraLook : Photon.MonoBehaviour
     {
         public GameObject toLook;
     

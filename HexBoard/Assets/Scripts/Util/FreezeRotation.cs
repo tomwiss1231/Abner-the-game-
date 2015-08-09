@@ -2,7 +2,7 @@
 
 namespace Assets.Scripts.Util
 {
-    public class FreezeRotation : MonoBehaviour
+    public class FreezeRotation : Photon.MonoBehaviour
     {
         private Quaternion _rotation;
         private Vector3 _soldierPos;

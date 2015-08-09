@@ -3,8 +3,9 @@ using UnityEngine;
 
 namespace Assets.Scripts.Behaviour
 {
-    public class Player : MonoBehaviour
+    public class Player : Photon.MonoBehaviour
     {
+        [SerializeField] private int _idGen = 0;
         [SerializeField] private List<Util.Abstract.Soldier> _soldiers;
         
         [SerializeField] private int _turns;
@@ -17,6 +18,7 @@ namespace Assets.Scripts.Behaviour
 
         public void AddSoldier(Util.Abstract.Soldier soldier)
         {
+            soldier.Id = _idGen++;
             _soldiers.Add(soldier);
         }
 

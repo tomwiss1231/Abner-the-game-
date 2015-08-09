@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.UI
 {
-    public class SkillBar : MonoBehaviour, IHealth
+    public class SkillBar : Photon.MonoBehaviour, IHealth
     {
         public Soldier Soldier;
         public Transform ForegroundSprite;

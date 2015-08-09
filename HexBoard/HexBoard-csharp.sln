@@ -1,6 +1,8 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2008
 
+Project("{5C8C4C95-78BF-E12C-849A-50C33CF39F44}") = "HexBoard", "Assembly-CSharp-firstpass-vs.csproj", "{FAF7F6CF-668D-F3F3-FCD0-11366E022BBE}"
+EndProject
 Project("{5C8C4C95-78BF-E12C-849A-50C33CF39F44}") = "HexBoard", "Assembly-CSharp-vs.csproj", "{4EB0CEAC-30E9-92F6-3126-25471DDE685F}"
 EndProject
 Project("{5C8C4C95-78BF-E12C-849A-50C33CF39F44}") = "HexBoard", "Assembly-CSharp-Editor-vs.csproj", "{26563DF8-2236-557B-BBA8-8C8E0CB6BE5D}"
@@ -11,6 +13,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FAF7F6CF-668D-F3F3-FCD0-11366E022BBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAF7F6CF-668D-F3F3-FCD0-11366E022BBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAF7F6CF-668D-F3F3-FCD0-11366E022BBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAF7F6CF-668D-F3F3-FCD0-11366E022BBE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4EB0CEAC-30E9-92F6-3126-25471DDE685F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4EB0CEAC-30E9-92F6-3126-25471DDE685F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4EB0CEAC-30E9-92F6-3126-25471DDE685F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -23,7 +29,7 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-																																																																																																																																																																																															GlobalSection(MonoDevelopProperties) = preSolution
+																																																																																																																																																																																																						GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Assembly-CSharp.csproj
 		Policies = $0
 		$0.TextStylePolicy = $1

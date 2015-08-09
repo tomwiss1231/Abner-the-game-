@@ -14,30 +14,13 @@ namespace Assets.Scripts.UI.Menu
         Hunter = 3
     }
 
-    public struct Tuple
+    public struct ChoiceUnit
     {
-        private Point _point;
-        private Unit _type;
-
-        public Point Position
-        {
-            get { return _point; }
-        }
-        public Unit Type { get { return _type; } }
-
-        public void SetPosition(Point point)
-        {
-            _point = point;
-        }
-
-        public Tuple(int x, int y, Unit type)
-        {
-            _point = new Point(x, y);
-            _type = type;
-        }
-
+        public Unit Unit { get; set; }
+        public int Position { get; set; }
     }
-    public class GameMenu : MonoBehaviour
+
+    public class GameMenu : Photon.MonoBehaviour
     {
         public static GameMenu Instanse = null;
         public Text Warrior;
@@ -52,26 +35,19 @@ namespace Assets.Scripts.UI.Menu
 
         private bool _opReady;
         private bool _plReady;
-        private bool _startingGame;
 
         private Unit _currentUnit;
-        private List<Tuple> _playerChooice;
-        private List<Tuple> _oppChooice;
+        private List<ChoiceUnit> _playerChooice;
+        private List<ChoiceUnit> _oppChooice;
 
-        public void AddSoldier(string point)
-        {
-            if (_plReady) return;
-            string[] position = point.Split(',');
-            int x = int.Parse(position[0]);
-            int y = int.Parse(position[1]);
-            AddSoldier(x, y);
-        }
+        private List<ChoiceUnit> _currentLst = null;
+        private PhotonView _network;
 
-        public List<Tuple> GetOpSoldiers() { return _oppChooice; }
+        public List<ChoiceUnit> GetOpSoldiers() { return _oppChooice; }
 
-        public List<Tuple> GetPlSoldiers() { return _playerChooice; }
+        public List<ChoiceUnit> GetPlSoldiers() { return _playerChooice; }
 
-        public void AddSoldier(int x, int y)
+        public void AddSoldier(int x)
         {
             if (_currentUnit == Unit.Hunter && HunterAmount <= 0) return;
             if (_currentUnit == Unit.Hunter && HunterAmount > 0) HunterAmount -= 1;
@@ -79,48 +55,50 @@ namespace Assets.Scripts.UI.Menu
             if (_currentUnit == Unit.Warrior && WarriorAmount > 0) WarriorAmount -= 1;
             if (_currentUnit == Unit.Mage && MageAmount <= 0) return;
             if (_currentUnit == Unit.Mage && MageAmount > 0) MageAmount -= 1;
-
-            _playerChooice.Add(new Tuple(x, y, _currentUnit));
-        }
-
-        public void ClientAddSoldier(string point)
-        {
-            if (!_plReady) return;
-            string[] position = point.Split(',');
-            int x = int.Parse(position[0]);
-            int y = int.Parse(position[1]);
-            if (_currentUnit == Unit.Hunter && HunterAmount <= 0) return;
-            if (_currentUnit == Unit.Hunter && HunterAmount > 0) HunterAmount -= 1;
-            if (_currentUnit == Unit.Warrior && WarriorAmount <= 0) return;
-            if (_currentUnit == Unit.Warrior && WarriorAmount > 0) WarriorAmount -= 1;
-            if (_currentUnit == Unit.Mage && MageAmount <= 0) return;
-            if (_currentUnit == Unit.Mage && MageAmount > 0) MageAmount -= 1;
-            _oppChooice.Add(new Tuple(x, y, _currentUnit));
+            ChoiceUnit choice = new ChoiceUnit {Position = x, Unit = _currentUnit};
+            _currentLst.Add(new ChoiceUnit {Position = x, Unit = _currentUnit});
 
         }
 
         void Start()
         {
             Instanse = this;
-            _playerChooice = new List<Tuple>();
-            _oppChooice = new List<Tuple>();
+            _playerChooice = new List<ChoiceUnit>();
+            _oppChooice = new List<ChoiceUnit>();
             _opReady = false;
             _plReady = false;
-            _startingGame = false;
+            _currentLst = PhotonNetwork.isMasterClient ? _playerChooice : _oppChooice;
+            _network = GetComponent<PhotonView>();
         }
+
+        [PunRPC]
+        void NotifyServerReady()
+        {
+            _plReady = !_plReady;
+            
+            if (_opReady && _plReady) photonView.RPC("StartGame", PhotonTargets.All);
+        }
+
+        [PunRPC]
+        void NotifyClientReady()
+        {
+            _opReady = !_opReady;
+            if (_plReady && _opReady) photonView.RPC("StartGame", PhotonTargets.All);
+
+        }
+
+        [PunRPC]
+        public void StartGame()
+        {
+            PhotonNetwork.LoadLevel("Game");
+        }
+
 
         public void ReadyEven()
         {
             if (WarriorAmount > 0 || MageAmount > 0 || HunterAmount > 0) return;
-            if (!_plReady)
-            {
-                WarriorAmount = 1;
-                MageAmount = 1;
-                HunterAmount = 1;
-                _plReady = true;
-            }
-            else if (_plReady) _opReady = true;
-            if(_plReady && _opReady) Application.LoadLevel("Game");
+            Ready.interactable = false;
+            photonView.RPC(PhotonNetwork.isMasterClient ? "NotifyServerReady" : "NotifyClientReady",PhotonTargets.AllBuffered);
         }
 
         public void ReturnMain()
@@ -145,9 +123,10 @@ namespace Assets.Scripts.UI.Menu
 
         void OnGUI()
         {
-            if (_plReady)
-                Ready.transform.GetChild(0).GetComponent<Text>().text = "Start";
-            else Ready.transform.GetChild(0).GetComponent<Text>().text = "Ready";
+            if (PhotonNetwork.isMasterClient)
+                Ready.transform.GetChild(0).GetComponent<Text>().text = _opReady ? "Start" : "Ready";
+            else
+                Ready.transform.GetChild(0).GetComponent<Text>().text = _plReady ? "Start" : "Ready";
             Warrior.text = "Left: " + WarriorAmount;
             Mage.text = "Left: " + MageAmount;
             Hunter.text = "Left: " + HunterAmount;

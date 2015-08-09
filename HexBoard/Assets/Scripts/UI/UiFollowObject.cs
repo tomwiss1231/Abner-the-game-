@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.UI
 {
-	public class UiFollowObject : MonoBehaviour
+    public class UiFollowObject : Photon.MonoBehaviour
 	{
 	    public Vector2 Offset;
 	    public Transform Following;

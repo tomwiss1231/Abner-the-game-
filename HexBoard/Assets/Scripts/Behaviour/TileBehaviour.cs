@@ -3,14 +3,18 @@ using Assets.Scripts.Util;
 using Assets.Scripts.Util.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace Assets.Scripts.Behaviour
 {
     [Serializable]
     [ExecuteInEditMode]
-    public class TileBehaviour : MonoBehaviour , ISoldierObserver
+    public class TileBehaviour : Photon.MonoBehaviour , ISoldierObserver
     {
+        
         [SerializeField] 
         public GameObject Soldier = null;
         
@@ -35,6 +39,18 @@ namespace Assets.Scripts.Behaviour
         [SerializeField]
         private bool _isNeighbour;
 
+        [PunRPC]
+        public void CalcWalk()
+        {
+            var selectedSoldier = GridManager.instance.SelectedSoldier;
+            if (selectedSoldier == null) return;
+            if (!IsNeighbour || selectedSoldier.IsMoving()) return;
+            selectedSoldier.ClearWalkPath();
+            ChangeToPath();
+            Stack<TileBehaviour> path = new Stack<TileBehaviour>();
+            path.Push(this);
+            FindPath(this, path);
+        }
 
         public void HaveEnemy(int n, int weight, string teamTag)
         {
@@ -110,14 +126,7 @@ namespace Assets.Scripts.Behaviour
                 return;
             if (Input.GetMouseButtonDown(0))
             {
-                var selectedSoldier = GridManager.instance.SelectedSoldier;
-                if (selectedSoldier == null) return;
-                if (!IsNeighbour || selectedSoldier.IsMoving()) return;
-                selectedSoldier.ClearWalkPath();
-                ChangeToPath();
-                Stack<TileBehaviour> path = new Stack<TileBehaviour>();
-                path.Push(this);
-                FindPath(this, path);
+                photonView.RPC("CalcWalk",PhotonTargets.All);
             }
         }
 
@@ -191,7 +200,8 @@ namespace Assets.Scripts.Behaviour
             if (!Application.isPlaying) return;
             if (Soldier != null) Soldier.GetComponent<Util.Abstract.Soldier>().Position = this;
             tile.ResetWeight();
-            GameManager.Instans.AddTile(this);
+            Spawn spawn = GetComponent<Spawn>();
+            spawn.enabled = true;
         }
 
         public void NotifyChange()

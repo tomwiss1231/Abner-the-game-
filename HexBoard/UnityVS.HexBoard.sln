@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityVS.HexBoard.CSharp", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityVS.HexBoard.CSharp.Editor", "UnityVS.HexBoard.CSharp.Editor.csproj", "{0896AEEE-E4A9-2FAB-7C2D-E78B298F7B01}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityVS.HexBoard.CSharp.Plugins", "UnityVS.HexBoard.CSharp.Plugins.csproj", "{D4A4EC15-7A01-AACD-2CD1-044BA0FC173E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{0896AEEE-E4A9-2FAB-7C2D-E78B298F7B01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0896AEEE-E4A9-2FAB-7C2D-E78B298F7B01}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0896AEEE-E4A9-2FAB-7C2D-E78B298F7B01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4A4EC15-7A01-AACD-2CD1-044BA0FC173E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4A4EC15-7A01-AACD-2CD1-044BA0FC173E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4A4EC15-7A01-AACD-2CD1-044BA0FC173E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4A4EC15-7A01-AACD-2CD1-044BA0FC173E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

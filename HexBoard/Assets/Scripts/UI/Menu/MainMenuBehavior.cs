@@ -6,7 +6,7 @@ namespace Assets.Scripts.UI.Menu
     {
         public void StartGame()
         {
-            Application.LoadLevel("GameMenu");
+            Application.LoadLevel("lobby");
         }
         public void Exit()
         {

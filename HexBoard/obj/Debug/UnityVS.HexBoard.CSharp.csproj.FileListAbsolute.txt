@@ -20,3 +20,6 @@ C:\Users\Tom\Videos\anime\HexBoard\Temp\UnityVS_bin\Debug\UnityEngine.UI.xml
 C:\Users\Tom\Videos\anime\HexBoard\obj\Debug\UnityVS.HexBoard.CSharp.csprojResolveAssemblyReference.cache
 C:\Users\Tom\Videos\anime\HexBoard\obj\Debug\Assembly-CSharp.dll
 C:\Users\Tom\Videos\anime\HexBoard\obj\Debug\Assembly-CSharp.pdb
+C:\Users\Tom\Videos\anime\HexBoard\Temp\UnityVS_bin\Debug\Photon3Unity3D.dll
+C:\Users\Tom\Videos\anime\HexBoard\Temp\UnityVS_bin\Debug\Assembly-CSharp-firstpass.pdb
+C:\Users\Tom\Videos\anime\HexBoard\Temp\UnityVS_bin\Debug\Photon3Unity3D.xml

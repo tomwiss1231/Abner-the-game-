@@ -2,7 +2,7 @@
 
 namespace Assets.Scripts.Behaviour
 {
-    public class HideBehaviour : MonoBehaviour
+    public class HideBehaviour : Photon.MonoBehaviour
     {
         private void OnCollisionEnter(Collision collision)
         {

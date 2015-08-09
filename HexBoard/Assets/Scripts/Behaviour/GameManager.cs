@@ -1,12 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Assets.Scripts.Behaviour.Soldier;
 using Assets.Scripts.UI.Menu;
+using Assets.Scripts.Util;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Assets.Scripts.Behaviour
 {
-    public class GameManager : MonoBehaviour
+    public class GameManager : Photon.MonoBehaviour
     {
         [SerializeField] public static GameManager Instans = null;
 
@@ -19,89 +21,76 @@ namespace Assets.Scripts.Behaviour
         [SerializeField] public GameObject Hunter;
         [SerializeField] public GameObject Warrior;
         [SerializeField] public GameObject Mage;
-        private bool _finish;
+
+        [SerializeField] public GameObject P1Win;
+        [SerializeField] public GameObject P2Win;
+
+        private bool _finishServer;
+        private bool _finishClient;
 
         void BuildServerSolier()
         {
             if (!Application.isPlaying) return;
-            List<Tuple> soldiers = null;
-            soldiers = GameMenu.Instanse.GetPlSoldiers();
-           
-            foreach (TileBehaviour tileBehaviour in _tiles)
+            List<ChoiceUnit> choices = GameMenu.Instanse.GetPlSoldiers();
+            foreach (ChoiceUnit choice in choices)
             {
-                foreach (Tuple opSoldier in soldiers)
+                GameObject soldier = null;
+                switch (choice.Unit)
                 {
-                    if (tileBehaviour.tile.X == opSoldier.Position.X && tileBehaviour.tile.Y == opSoldier.Position.Y)
-                    {
-                        GameObject soldier = null;
-                        switch (opSoldier.Type)
-                        {
-                            case Unit.Hunter:
-                                soldier = (GameObject)Instantiate(Hunter);
-                                break;
-                            case Unit.Warrior:
-                                
-                                soldier = (GameObject)Instantiate(Warrior);
-                                break;
-                            case Unit.Mage:
-                                
-                                soldier = (GameObject)Instantiate(Mage);
-                                break;
-                        }
-                        if (soldier != null)
-                        {
-                            Util.Abstract.Soldier action = soldier.GetComponent<Util.Abstract.Soldier>();
-                            soldier.tag = "A";
-                            tileBehaviour.Soldier = soldier;
-                            action.Position = tileBehaviour;
-                            Vector3 pos = tileBehaviour.transform.position;
-                            pos.y = 0.66f;
-                            soldier.transform.position = pos;
-                            action.SetPlayer(Player1);
-                            action.Finish();
-                        }
-                    }
+                    case Unit.Hunter:
+                        soldier = PhotonNetwork.Instantiate(Hunter.name, Vector3.zero, Quaternion.identity, 0);
+                        break;
+                    case Unit.Warrior:
+
+                        soldier = PhotonNetwork.Instantiate(Warrior.name, Vector3.zero, Quaternion.identity, 0);
+                        break;
+                    case Unit.Mage:
+
+                        soldier = PhotonNetwork.Instantiate(Mage.name, Vector3.zero, Quaternion.identity, 0);
+                        break;
                 }
+                Util.Abstract.Soldier action = soldier.GetComponent<Util.Abstract.Soldier>();
+                action.photonView.RPC("SetSoldier", PhotonTargets.AllBuffered, "A", choice.Position);
             }
+            photonView.RPC("ServerFinishBuilding", PhotonTargets.All);
         }
 
         void BuildClientSoliders()
         {
-            List<Tuple> soldiers = null;
-            soldiers = GameMenu.Instanse.GetOpSoldiers();
-            
-
-            foreach (TileBehaviour tileBehaviour in _tiles)
+            List<ChoiceUnit> choices = GameMenu.Instanse.GetOpSoldiers();
+            foreach (ChoiceUnit choice in choices)
             {
-                foreach (Tuple opSoldier in soldiers)
+                GameObject soldier = null;
+                switch (choice.Unit)
                 {
-                    if (tileBehaviour.tile.X == opSoldier.Position.X && tileBehaviour.tile.Y == opSoldier.Position.Y)
-                    {
-                        GameObject soldier = null;
-                        switch (opSoldier.Type)
-                        {
-                            case Unit.Hunter:
-                                soldier = (GameObject)Instantiate(Hunter);
-                                break;
-                            case Unit.Warrior:
-                                soldier = (GameObject)Instantiate(Warrior);
-                                break;
-                            case Unit.Mage:
-                                soldier = (GameObject)Instantiate(Mage);
-                                break;
-                        }
-                        Util.Abstract.Soldier action = soldier.GetComponent<Util.Abstract.Soldier>();
-                        soldier.tag = "B";
-                        tileBehaviour.Soldier = soldier;
-                        action.Position = tileBehaviour;
-                        Vector3 pos = tileBehaviour.transform.position;
-                        pos.y = 0.66f;
-                        soldier.transform.position = pos;
-                        action.SetPlayer(Player2);
-                        action.Finish();
-                    }
+                    case Unit.Hunter:
+                        soldier = PhotonNetwork.Instantiate(Hunter.name, Vector3.zero, Quaternion.identity, 0);
+                        break;
+                    case Unit.Warrior:
+
+                        soldier = PhotonNetwork.Instantiate(Warrior.name, Vector3.zero, Quaternion.identity, 0);
+                        break;
+                    case Unit.Mage:
+
+                        soldier = PhotonNetwork.Instantiate(Mage.name, Vector3.zero, Quaternion.identity, 0);
+                        break;
                 }
+                Util.Abstract.Soldier action = soldier.GetComponent<Util.Abstract.Soldier>();
+                action.photonView.RPC("SetSoldier", PhotonTargets.AllBuffered, "B", choice.Position);
             }
+            photonView.RPC("CilentFinishBuilding", PhotonTargets.All);
+        }
+
+        [PunRPC]
+        public void ServerFinishBuilding()
+        {
+            _finishServer = true;
+        }
+
+        [PunRPC]
+        public void CilentFinishBuilding()
+        {
+            _finishClient = true;
         }
 
         void Awake()
@@ -112,7 +101,10 @@ namespace Assets.Scripts.Behaviour
             Instans = this;
             Player1.AddOpponent(Player2);
             Player2.AddOpponent(Player1);
-            _finish = false;
+            _finishServer = false;
+            _finishClient = false;
+            if(PhotonNetwork.isMasterClient) BuildServerSolier();
+            else BuildClientSoliders();
         }
 
         public void Player1Restart()
@@ -129,38 +121,28 @@ namespace Assets.Scripts.Behaviour
             Player2.CheckSoldiers();
         }
 
-        public void AddTile(TileBehaviour tb)
+        [PunRPC]
+        public void DisconnectAll()
         {
-            if (!Application.isPlaying) return;
-            _tiles.Add(tb);
-            if (_tiles.Count > 215)
-            {
-                _finish = true;
-
-              BuildServerSolier();
-              BuildClientSoliders();
-
-            }
+            PhotonNetwork.Disconnect();
         }
-
 
         public void ExitGame()
         {
-            Application.Quit();
+            //print(PhotonNetwork.isMasterClient ? "Player2 wins!!!!!" : "Player1 wins!!!!!");
+            photonView.RPC("DisconnectAll", PhotonTargets.All);
         }
 
         void Update()
         {
-            if(!_finish) return;
+            if (!_finishServer || !_finishClient) return;
             if (Player1.GetSoldiers().Count == 0)
             {
-                print("Player2 wins!!!!!");
-                Application.LoadLevel("MainMenu");
+               P2Win.SetActive(true);
             }
             if (Player2.GetSoldiers().Count == 0)
             {
-                print("Player1 wins!!!!!");
-                Application.LoadLevel("MainMenu");
+                P1Win.SetActive(true);
             }
             if (Player1.NowPalying && Player1.EndTurn())
             {
@@ -173,6 +155,11 @@ namespace Assets.Scripts.Behaviour
                 Player1Restart();
                 return;
             }
+        }
+
+        void OnDisconnectedFromPhoton()
+        {
+            Application.LoadLevel("MainMenu");
         }
     }
 }

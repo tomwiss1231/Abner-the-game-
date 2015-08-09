@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.UI
 {
-    public class HealthBar : MonoBehaviour, IHealth
+    public class HealthBar : Photon.MonoBehaviour, IHealth
     {
         public Soldier Soldier;
         public Transform ForegroundSprite;
@@ -66,7 +66,7 @@ namespace Assets.Scripts.UI
 
         public void AddHealth(float healPoints)
         {
-            float result = _curHealth + healPoints/MaxHealth;
+            float result = _curHealth + healPoints;
             if (result > MaxHealth)
                 result = MaxHealth;
             _curHealth = result;

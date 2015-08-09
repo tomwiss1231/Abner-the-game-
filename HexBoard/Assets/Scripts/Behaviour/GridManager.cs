@@ -12,7 +12,7 @@ namespace Assets.Scripts.Behaviour
 {
     [Serializable]
     [ExecuteInEditMode]
-    public class GridManager : MonoBehaviour
+    public class GridManager : Photon.MonoBehaviour
     {
         [SerializeField] public static GridManager instance = null;
 
@@ -35,6 +35,22 @@ namespace Assets.Scripts.Behaviour
 
         [SerializeField] private  Dictionary<Point, TileBehaviour> board;
 
+        [PunRPC]
+        public void ClearSoldier()
+        {
+            SelectedSoldier.ClearAll();
+            SelectedSoldier.ResetDes();
+            SelectedSoldier = null;
+            
+            Cancel.gameObject.SetActive(false);
+            Action.gameObject.SetActive(false);
+            Special.gameObject.SetActive(false);
+
+            Action.onClick.RemoveAllListeners();
+            Special.onClick.RemoveAllListeners();
+
+        }
+
         public void ShowWalkRadiusEvent()
         {
             if (SelectedSoldier != null && !SelectedSoldier.IsMoving())
@@ -51,17 +67,16 @@ namespace Assets.Scripts.Behaviour
             Cancel.gameObject.SetActive(false);
             Action.gameObject.SetActive(false);
             Special.gameObject.SetActive(false);
+            
+            Action.onClick.RemoveAllListeners();
+            Special.onClick.RemoveAllListeners();
         }
 
         public void CancelEve()
         {
             if (SelectedSoldier != null && !SelectedSoldier.IsMoving() && !SelectedSoldier.IsAttacking)
             {
-                SelectedSoldier.ClearAll();
-                SelectedSoldier.ResetDes();
-                SelectedSoldier = null;
-                Cancel.gameObject.SetActive(false);
-                Action.gameObject.SetActive(false);
+                photonView.RPC("ClearSoldier", PhotonTargets.AllBuffered);
             }
         }
 
@@ -118,12 +133,17 @@ namespace Assets.Scripts.Behaviour
                     sizeX--;
                 for (float x = 0; x < sizeX; x++)
                 {
+                    
                     GameObject hex = (GameObject) Instantiate(Hex);
                     Vector2 gridPos = new Vector2(x, y);
                     hex.transform.position = calcWorldCoord(gridPos);
                     hex.transform.parent = hexGridGO.transform;
                     TileBehaviour tileB = hex.GetComponent<TileBehaviour>();
-                    tileB.tile = new Tile((int)x - (int)(y / 2), (int)y, true);;
+                    Spawn spawn = hex.GetComponent<Spawn>();
+                    spawn.Tile = tileB;
+ 
+                    tileB.tile = new Tile((int)x - (int)(y / 2), (int)y, true);
+
                     board.Add(tileB.tile.Location, tileB);
                 }
             }

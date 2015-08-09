@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace Assets.Scripts.Util
 {
-    public class Spawn : MonoBehaviour
+    public class Spawn : Photon.MonoBehaviour
     {
         public int SpawnId = -1;
-        public string SpawnTag = "A";
+        public string SpawnTag = "None";
         public TileBehaviour Tile;
 
         void Start()

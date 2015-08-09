@@ -1,4 +1,5 @@
-﻿using Assets.Scripts.UI;
+﻿using System.Linq;
+using Assets.Scripts.UI;
 using Assets.Scripts.Util;
 using Assets.Scripts.Util.Buffs;
 using Assets.Scripts.Util.Interfaces;
@@ -8,21 +9,33 @@ namespace Assets.Scripts.Behaviour.Soldier
 {
     public class Warrior : Util.Abstract.Soldier
     {
-
-
-        public override void SpecialHit(ISoldier enemy)
+        [PunRPC]
+        public void WarriorSpecial()
         {
-            GridManager.instance.Special.onClick.RemoveAllListeners();
             if (IsAttacking || !SkillBar.DecSkillPoints(10)) return;
             FloatingText.Show("Special!!!", "PlayerSpecialText",
             new FromWorldPointTextPositioner(Camera.main, transform.position, 2f, 60f));
-            //TODO: specialHit ani.
-            int damege = CalHit();
+        }
+
+        public override void SpecialHit(int oponId)
+        {
+            Util.Abstract.Soldier enemy = _player.GetOpponent().GetSoldiers().Where(s => s.Id == oponId).ElementAt(0);;
+            GridManager.instance.Special.onClick.RemoveAllListeners();
+            photonView.RPC("WarriorSpecial", PhotonTargets.Others);
+
+            if (IsAttacking || !SkillBar.DecSkillPoints(10)) return;
+            FloatingText.Show("Special!!!", "PlayerSpecialText",
+            new FromWorldPointTextPositioner(Camera.main, transform.position, 2f, 60f));
+
+            int damage = CalHit();
             if (CheckIfCritical())
-                damege *= CriticalHit;
-            damege *= SpecialHitParameter;
-            enemy.GetHealth().TakeDamage(damege);
-            EndOfTurnAction();
+                damage *= CriticalHit;
+            damage *= SpecialHitParameter;
+
+            enemy.photonView.RPC("AtkDamage", PhotonTargets.All, damage);
+            enemy.photonView.RPC("StopHitAni", PhotonTargets.All);
+            photonView.RPC("EndAtkAni", PhotonTargets.All);
+            if (!enemy.GetHealth().IsAlive()) enemy.photonView.RPC("Die", PhotonTargets.All);
         }
 
         public override void FillSkillBar()
@@ -35,13 +48,19 @@ namespace Assets.Scripts.Behaviour.Soldier
             InAttackRange = true;
         }
 
-        public override void BuffAction(Util.Abstract.Soldier teamSoldier)
+        [PunRPC]
+        public void WorriorBuff(int teamSoldierId)
         {
-            //TODO: buff ani.
+            Util.Abstract.Soldier teamSoldier = _player.GetSoldiers().Where(s => s.Id == teamSoldierId).ElementAt(0); ;
             WarCryBuff warCryBuff = new WarCryBuff();
             warCryBuff.DoBuff(teamSoldier);
             Buffs.Add(warCryBuff);
             EndOfTurnAction();
+        }
+
+        public override void BuffAction(int teamSoldierId)
+        {
+            photonView.RPC("WorriorBuff", PhotonTargets.All, teamSoldierId);
         }
 
         protected override string BuffName()

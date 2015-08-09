@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Assets.Scripts.Behaviour;
 using Assets.Scripts.UI;
 using Assets.Scripts.Util.Interfaces;
@@ -12,7 +13,7 @@ using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.Util.Abstract
 {
-    public abstract  class Soldier : MonoBehaviour, ISoldier, IObserverble, ISoldierObserver
+    public abstract class Soldier : Photon.MonoBehaviour, ISoldier, IObserverble, ISoldierObserver
     {
         [SerializeField] private const float MinNextTileDist = 0.1f;
 
@@ -55,8 +56,9 @@ namespace Assets.Scripts.Util.Abstract
         [SerializeField] public bool IsAttacking { get; private set; }
         [SerializeField] public bool IsGettingHit { get;  private set; }
         [SerializeField] public bool IsHideing { get;  set; }
-                
-        public abstract void SpecialHit(ISoldier enemy);
+        [SerializeField] public int Id { get;  set; }
+
+        public abstract void SpecialHit(int oponId);
         public abstract void FillSkillBar();
         public abstract void ActivateBuffCast();
         
@@ -65,7 +67,125 @@ namespace Assets.Scripts.Util.Abstract
             NotifyAll();
         }
 
-        public abstract void BuffAction(Soldier teamSoldier);
+        [PunRPC]
+        public void SetSoldier(string teamTag, int spanId)
+        {
+            Spawn spawn = FindObjectsOfType<Spawn>().Where(o => o.SpawnTag == teamTag && o.SpawnId == spanId).ElementAt(0);
+            tag = teamTag;
+            spawn.Tile.Soldier = this.gameObject;
+            Position = spawn.Tile;
+            Vector3 position = spawn.Tile.transform.position;
+            position.y = 0.66f;
+            transform.position = position;
+            _player = (tag.Equals("A")) ? GameManager.Instans.Player1 : GameManager.Instans.Player2;
+            _player.AddSoldier(this);
+            _finish = true;
+        }
+
+        [PunRPC]
+        public void Select()
+        {
+            GridManager.instance.SelectedSoldier = this;
+            WalkRadius();
+            StartCoroutine(ShowHitRange());
+            ActivateBuffCast();
+            if(photonView.isMine)GridManager.instance.Cancel.gameObject.SetActive(true);
+        }
+
+        [PunRPC]
+        public void Actions()
+        {
+            Soldier selectSoldier = GridManager.instance.SelectedSoldier;
+
+            selectSoldier.ClearWalkPath();
+            Button action = GridManager.instance.Action;
+            if (tag == selectSoldier.tag)
+            {
+                if (photonView.isMine)
+                {
+                    action.onClick.RemoveAllListeners();
+                    action.gameObject.SetActive(true);
+                    action.onClick.AddListener(() => selectSoldier.BuffAction(Id));
+                    action.transform.GetChild(0).GetComponent<Text>().text = selectSoldier.BuffName();
+                }
+            }
+            else
+            {
+                if (transform.position.x > selectSoldier.transform.position.x)
+                {
+                    float x = selectSoldier.transform.position.x,
+                        y = selectSoldier.transform.position.y,
+                        z = selectSoldier.transform.position.z;
+                    selectSoldier.transform.position = new Vector3(x + 0.01f, y, z);
+                }
+                if (transform.position.x < selectSoldier.transform.position.x)
+                {
+                    float x = selectSoldier.transform.position.x,
+                        y = selectSoldier.transform.position.y,
+                        z = selectSoldier.transform.position.z;
+                    selectSoldier.transform.position = new Vector3(x - 0.01f, y, z);
+                }
+
+                if (!photonView.isMine)
+                {
+                    action.gameObject.SetActive(true);
+                    action.onClick.AddListener(() => StartCoroutine(selectSoldier.Damage(Id)));
+                    action.transform.GetChild(0).GetComponent<Text>().text = "Attack";
+                    Button specialAtk = GridManager.instance.Special;
+                    specialAtk.gameObject.SetActive(true);
+                    specialAtk.onClick.RemoveAllListeners();
+                    specialAtk.onClick.AddListener(() => selectSoldier.SpecialHit(Id));
+                }
+            }
+
+        }
+
+        [PunRPC]
+        public void StartWalkingRpc()
+        {
+            GridManager.instance.Action.onClick.RemoveAllListeners();
+            _curTile = _walkPosition.Pop().tile;
+            _curTilePos = CalcTilePos(_curTile);
+            _isMoving = true;
+            Controller.SetBool("IsWalk", true);
+            Controller.SetBool("IsIdle", false);
+            Controller.SetBool("IsAttack", false);
+            Controller.SetBool("IsHit", false);
+        }
+
+        [PunRPC]
+        public abstract void BuffAction(int teamSoldierId);
+
+        [PunRPC]
+        public void StartAtkAni()
+        {
+            IsAttacking = true;
+            if (photonView.isMine) GridManager.instance.Action.onClick.RemoveAllListeners();
+            Controller.SetBool("IsWalk", false);
+            Controller.SetBool("IsIdle", false);
+            Controller.SetBool("IsAttack", true);
+            Controller.SetBool("IsHit", false);
+        }
+
+        [PunRPC]
+        public void EndAtkAni()
+        {
+            EndOfTurnAction();
+            IsAttacking = false;
+        }
+
+        [PunRPC]
+        public void AtkDamage(int damage)
+        {
+            GetHealth().TakeDamage(damage);
+            GotHit();
+        }
+
+        [PunRPC]
+        public void StopHitAni()
+        {
+            IsGettingHit = false;
+        }
         protected abstract string BuffName();
 
         protected virtual void Init()
@@ -75,12 +195,7 @@ namespace Assets.Scripts.Util.Abstract
             IsAttacking = false;
             _playerObservers = new List<ISoldierObserver>();
             Buffs = new List<Buff>();
-            _player = (GameManager.Instans.Player1.tag.Equals(tag))
-                ? GameManager.Instans.Player1
-                : GameManager.Instans.Player2;
-            _player.AddSoldier(this);
         }
-
 
         public void GetBuffFromTeam(Buff buff)
         {
@@ -141,34 +256,31 @@ namespace Assets.Scripts.Util.Abstract
             Position.ShowAllPaths(WalkRange);
         }
 
-        public IEnumerator Damage(ISoldier enemy)
+        public IEnumerator Damage(int oponId)
         {
 
-            IsAttacking = true;
-            GridManager.instance.Action.onClick.RemoveAllListeners();
-            Controller.SetBool("IsWalk", false);
-            Controller.SetBool("IsIdle", false);
-            Controller.SetBool("IsAttack", true);
-            Controller.SetBool("IsHit", false);
+            photonView.RPC("StartAtkAni", PhotonTargets.All);
+            Soldier enemy = _player.GetOpponent().GetSoldiers().Where(s => s.Id == oponId).ElementAt(0);
+            
             bool isDead = false;
             for (int i = 0; i < NumberOfAttacks && !isDead; i++)
             {
-                int demage = CalHit();
+                int damage = CalHit();
                 if (CheckIfCritical())
-                    demage *= CriticalHit;
+                    damage *= CriticalHit;
 
                 yield return new WaitForSeconds(0.7f);
-
-                enemy.GetHealth().TakeDamage(demage);
-                enemy.GotHit();
+                enemy.photonView.RPC("StopHitAni", PhotonTargets.All);
+                enemy.photonView.RPC("AtkDamage", PhotonTargets.All, damage);
                 if (!enemy.GetHealth().IsAlive())
                 {
-                    enemy.Die();
+                    enemy.photonView.RPC("Die", PhotonTargets.All);
                     isDead = true;
                 }
             }
-            EndOfTurnAction();
-            IsAttacking = false;
+            enemy.photonView.RPC("StopHitAni", PhotonTargets.All);
+
+            photonView.RPC("EndAtkAni", PhotonTargets.All);
         }
 
         protected int CalHit()
@@ -185,6 +297,7 @@ namespace Assets.Scripts.Util.Abstract
         {
             return Random.Range(0, 100) <= MissPrecent;
         }
+
         public IHealth GetHealth()
         {
             return Health;
@@ -197,7 +310,6 @@ namespace Assets.Scripts.Util.Abstract
             Controller.SetBool("IsIdle", false);
             Controller.SetBool("IsAttack", false);
             Controller.SetBool("IsHit", true);
-            IsGettingHit = false;
         }
 
         public bool IsMoving()
@@ -205,28 +317,23 @@ namespace Assets.Scripts.Util.Abstract
             return _isMoving;
         }
 
-
         public void SavePath(Stack<TileBehaviour> path)
         {
             _walkPosition = path;
             path.Pop();
-            Button action = GridManager.instance.Action;
-            action.onClick.RemoveAllListeners();
-            action.onClick.AddListener(StartWalking);
-            action.transform.GetChild(0).GetComponent<Text>().text = "Walk";
-            action.gameObject.SetActive(true);
+            if (photonView.isMine)
+            {
+                Button action = GridManager.instance.Action;
+                action.onClick.RemoveAllListeners();
+                action.onClick.AddListener(StartWalking);
+                action.transform.GetChild(0).GetComponent<Text>().text = "Walk";
+                action.gameObject.SetActive(true);
+            }
         }
-
+ 
         public void StartWalking()
         {
-            GridManager.instance.Action.onClick.RemoveAllListeners();
-            _curTile = _walkPosition.Pop().tile;
-            _curTilePos = CalcTilePos(_curTile);
-            _isMoving = true;
-            Controller.SetBool("IsWalk", true);
-            Controller.SetBool("IsIdle", false);
-            Controller.SetBool("IsAttack", false);
-            Controller.SetBool("IsHit", false);
+            photonView.RPC("StartWalkingRpc",PhotonTargets.All);
         }
 
         private void OnMouseOver()
@@ -235,58 +342,18 @@ namespace Assets.Scripts.Util.Abstract
                 return;
             if (Input.GetMouseButtonDown(0))
             {
+
                 Soldier selectSoldier = GridManager.instance.SelectedSoldier;
                 if (_player.NowPalying && selectSoldier == null)
                 {
-                    GridManager.instance.SelectedSoldier = this;
-                    WalkRadius();
-                    StartCoroutine(ShowHitRange());
-                    ActivateBuffCast();
-                    GridManager.instance.Cancel.gameObject.SetActive(true);
+                    if (_player.tag.Equals("A") && !PhotonNetwork.isMasterClient || _player.tag.Equals("B") && PhotonNetwork.isMasterClient) return;
+                    photonView.RPC("Select",PhotonTargets.AllBuffered);
                 }
                 else if (selectSoldier != null && (InAttackRange && !selectSoldier.IsMoving()))
                 {
-                    selectSoldier.ClearWalkPath();
-                    Button action = GridManager.instance.Action;
-                    action.onClick.RemoveAllListeners();
-                    action.gameObject.SetActive(true);
-                    if (tag == selectSoldier.tag)
-                    {
-                        action.onClick.AddListener(() => selectSoldier.BuffAction(this));
-                        action.transform.GetChild(0).GetComponent<Text>().text = selectSoldier.BuffName();
-                    }
-                    else
-                    {
-                        if (transform.position.x > selectSoldier.transform.position.x)
-                        {
-                            float x = selectSoldier.transform.position.x,
-                                y = selectSoldier.transform.position.y, 
-                                z = selectSoldier.transform.position.z;
-                            selectSoldier.transform.position = new Vector3(x+0.01f, y, z);
-                        }
-                        if (transform.position.x < selectSoldier.transform.position.x)
-                        {
-                            float x = selectSoldier.transform.position.x,
-                                y = selectSoldier.transform.position.y,
-                                z = selectSoldier.transform.position.z;
-                            selectSoldier.transform.position = new Vector3(x - 0.01f, y, z);
-                        }
-                        action.onClick.AddListener(() => StartCoroutine(selectSoldier.Damage(this)));
-                        action.transform.GetChild(0).GetComponent<Text>().text = "Attack";
-                        Button specialAtk = GridManager.instance.Special;
-                        specialAtk.gameObject.SetActive(true);
-                        specialAtk.onClick.RemoveAllListeners();
-                        specialAtk.onClick.AddListener(() => selectSoldier.SpecialHit(this));
-                    }
-                }
-            }
-            if (Input.GetMouseButtonDown(1))
-            {
-                Soldier selectedSoldier = GridManager.instance.SelectedSoldier;
-                if (selectedSoldier == null) return;
-                else if (InAttackRange && !selectedSoldier.IsMoving() && tag != selectedSoldier.tag)
-                {
-              
+                    if (selectSoldier.tag.Equals("A") && !PhotonNetwork.isMasterClient ||
+                        selectSoldier.tag.Equals("B") && PhotonNetwork.isMasterClient) return;
+                    photonView.RPC("Actions",PhotonTargets.All);
                 }
             }
         }
@@ -311,11 +378,6 @@ namespace Assets.Scripts.Util.Abstract
             _walkPosition = null;
             GridManager.instance.SelectedSoldier = null;
             GridManager.instance.DisableButtons();
-        }
-
-        public void Finish()
-        {
-            _finish = true;
         }
 
         public void ResetDes()
@@ -425,10 +487,10 @@ namespace Assets.Scripts.Util.Abstract
 
         void OnDisable()
         {
+            if (!_finish) return;
             Position.Soldier = null;
             Position = null;
             _player.RemoveSoldier(this);
-            print("Done!" + gameObject.name);
         }
 
         public void NotifyChange()
@@ -446,19 +508,15 @@ namespace Assets.Scripts.Util.Abstract
 
         }
 
+        [PunRPC]
         public void Die()
         {
             Position.SetDefault();
             Health.gameObject.SetActive(false);
             SkillBar.gameObject.SetActive(false);
             gameObject.SetActive(false);
-
         }
+        
 
-        public void SetPlayer(Player player)
-        {
-            _player = player;
-            _player.AddSoldier(this);
-        }
     }
 }
